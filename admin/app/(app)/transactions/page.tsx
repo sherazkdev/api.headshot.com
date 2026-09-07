@@ -35,7 +35,7 @@ export default function TransactionsPage() {
 
   return (
     <div>
-      <PageHeader title="Purchases & Transactions" subtitle="Real Play Store / AdMob rows stored in MongoDB after Google verification." />
+      <PageHeader title="Purchases & Transactions" subtitle="Purchases, rewarded ads, and credit grants." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Transactions" value={fmt(overview.transactions)} icon={<ShoppingBag size={18} />} />
         <StatCard label="Purchase Revenue" value={money(overview.purchaseRevenue)} icon={<DollarSign size={18} />} />

@@ -108,6 +108,17 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   );
 }
 
+export function DateRangeSelect({ className }: { className?: string }) {
+  return (
+    <Select className={clsx("w-40", className)} defaultValue="30d">
+      <option value="7d">Last 7 days</option>
+      <option value="30d">Last 30 days</option>
+      <option value="90d">Last 90 days</option>
+      <option value="all">All time</option>
+    </Select>
+  );
+}
+
 export function Badge({
   children,
   tone = "neutral",

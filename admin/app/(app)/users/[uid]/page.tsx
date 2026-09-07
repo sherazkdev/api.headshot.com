@@ -82,7 +82,7 @@ export default function UserDetailPage() {
               ["Last Login", when((user?.lastLoginAt as string) || "2025-05-18T14:15:00Z")],
             ].map(([k, v]) => (
               <div key={String(k)} className="flex justify-between border-t border-line py-2 text-sm first:border-0">
-                <span className="text-subtle">{k}</span>
+                <span className="text-subtle">{String(k)}</span>
                 <span>{String(v ?? "—")}</span>
               </div>
             ))}
@@ -112,7 +112,7 @@ export default function UserDetailPage() {
               ["Uses Left", wallet.usesLeft ?? 25],
             ].map(([k, v]) => (
               <div key={String(k)} className="flex justify-between py-1.5 text-sm">
-                <span className="text-subtle">{k}</span>
+                <span className="text-subtle">{String(k)}</span>
                 <span className="font-medium">{fmt(Number(v))}</span>
               </div>
             ))}
@@ -132,7 +132,7 @@ export default function UserDetailPage() {
               ["Profile Reviews", 4],
             ].map(([k, v]) => (
               <div key={String(k)} className="flex justify-between py-1.5 text-sm">
-                <span className="text-subtle">{k}</span>
+                <span className="text-subtle">{String(k)}</span>
                 <span>{v}</span>
               </div>
             ))}

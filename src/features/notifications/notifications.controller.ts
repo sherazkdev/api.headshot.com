@@ -43,6 +43,12 @@ export class NotificationsController {
       }),
       req.body,
     );
-    return ok(await this.service.campaign(body));
+    return ok(
+      await this.service.campaign({
+        title: body.title,
+        body: body.body,
+        audience: body.audience ?? "all",
+      }),
+    );
   };
 }

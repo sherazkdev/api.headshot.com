@@ -6,6 +6,7 @@ import { Crown, Download, Plus, Search, ShieldAlert, UserCheck, Users } from "lu
 import { api } from "@/lib/api";
 import { fmt, initials, when } from "@/lib/format";
 import { Badge, Button, Card, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
+import { trendHint } from "@/lib/chart-data";
 import { clsx } from "@/components/clsx";
 
 type User = {
@@ -68,9 +69,9 @@ export default function UsersPage() {
     <div>
       <PageHeader title="Users" subtitle="Manage registered accounts and access." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Users" value={fmt(totals.totalUsers)} hint="Live MongoDB" icon={<Users size={18} />} />
-        <StatCard label="Active" value={fmt(Math.max(totals.totalUsers - totals.suspended, 0))} hint="Not suspended" tone="success" icon={<UserCheck size={18} />} />
-        <StatCard label="Premium" value={fmt(totals.premium)} hint="isPremium = true" tone="purple" icon={<Crown size={18} />} />
+        <StatCard label="Total Users" value={fmt(totals.totalUsers)} hint={trendHint(totals.totalUsers)} icon={<Users size={18} />} />
+        <StatCard label="Active" value={fmt(Math.max(totals.totalUsers - totals.suspended, 0))} hint={trendHint(Math.max(totals.totalUsers - totals.suspended, 0))} tone="success" icon={<UserCheck size={18} />} />
+        <StatCard label="Premium" value={fmt(totals.premium)} hint={trendHint(totals.premium)} tone="purple" icon={<Crown size={18} />} />
         <StatCard label="Suspended" value={fmt(totals.suspended)} hint="accountStatus" tone="warning" icon={<ShieldAlert size={18} />} />
       </div>
       <Card className="mt-4 overflow-hidden">

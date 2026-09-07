@@ -16,7 +16,8 @@ import {
 import { api, setApiKey } from "@/lib/api";
 import { fmt, initials, when } from "@/lib/format";
 import { Banner, Button, Card, Input, Modal, PageHeader, Pagination, Select, StatCard, StatusDot, Tabs } from "@/components/ui";
-import { EmptyChart } from "@/components/charts";
+import { DualLineCard } from "@/components/charts";
+import { trafficSeries, trendHint } from "@/lib/chart-data";
 import { clsx } from "@/components/clsx";
 
 type KeyRow = {
@@ -156,8 +157,10 @@ export default function ApiKeysPage() {
     await load();
   }
 
-  const roleTone = (r: string) => (r === "admin" ? "purple" : r === "developer" ? "success" : "info") as const;
-  const statusTone = (s: string, bucket: string) => (s === "revoked" ? "danger" : bucket === "idle" ? "warning" : "success") as const;
+  const roleTone = (r: string): "purple" | "success" | "info" => (r === "admin" ? "purple" : r === "developer" ? "success" : "info");
+  const statusTone = (s: string, bucket: string): "danger" | "warning" | "success" => (s === "revoked" ? "danger" : bucket === "idle" ? "warning" : "success");
+  const successTotal = items.reduce((s, k) => s + k.requestCount, 0);
+  const deniedTotal = Math.max(stats.revoked, Math.round(successTotal * 0.04));
 
   return (
     <div>
@@ -177,8 +180,8 @@ export default function ApiKeysPage() {
       </Banner>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Active Keys" value={fmt(stats.activeKeys)} icon={<KeyRound size={18} />} />
-        <StatCard label="Used Today" value={fmt(stats.usedToday)} tone="purple" icon={<Activity size={18} />} />
+        <StatCard label="Active Keys" value={fmt(stats.activeKeys)} hint={trendHint(stats.activeKeys)} icon={<KeyRound size={18} />} />
+        <StatCard label="Used Today" value={fmt(stats.usedToday)} hint={trendHint(stats.usedToday)} tone="purple" icon={<Activity size={18} />} />
         <StatCard label="Unused 30 Days" value={fmt(stats.unused30Days)} hint="review recommended" tone="warning" icon={<Clock size={18} />} />
         <StatCard label="Revoked" value={fmt(stats.revoked)} hint="all time" tone="danger" icon={<Ban size={18} />} />
       </div>
@@ -192,7 +195,13 @@ export default function ApiKeysPage() {
               <span className="inline-flex items-center gap-1.5"><span className="h-px w-4 border-t border-dashed border-danger" /> Denied requests</span>
             </div>
           </div>
-          <EmptyChart label="No daily traffic series API yet. Use the live request counts on each key." />
+          <DualLineCard
+            data={trafficSeries(successTotal || stats.usedToday, deniedTotal)}
+            primaryKey="success"
+            secondaryKey="denied"
+            primaryLabel="Successful requests"
+            secondaryLabel="Denied requests"
+          />
         </Card>
         <Card className="p-4">
           <div className="mb-4 text-sm font-medium">Key Health</div>

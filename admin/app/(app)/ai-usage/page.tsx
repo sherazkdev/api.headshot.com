@@ -55,7 +55,7 @@ export default function AiUsagePage() {
     <div>
       <PageHeader
         title="AI Usage / Analytics"
-        subtitle="Live job counts and provider mix from MongoDB."
+        subtitle="AI job volume, provider mix, and tool usage."
         actions={<Select className="w-36"><option>All time</option></Select>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

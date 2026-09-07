@@ -54,7 +54,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
       level: config.isProd ? "info" : "debug",
     },
     trustProxy: true,
-    requestTimeout: 60_000,
+    requestTimeout: config.AI_REQUEST_TIMEOUT_MS,
     connectionTimeout: 10_000,
     keepAliveTimeout: 72_000,
     bodyLimit: config.MAX_UPLOAD_MB * 1024 * 1024,
@@ -107,7 +107,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const users = new UsersService(cache, storage);
   const apiKeys = new ApiKeysService(cache);
   const headshots = new HeadshotsService(config, credits, queue, storage, gemini, bfl);
-  const branding = new BrandingService(config, credits, gemini, storage);
+  const branding = new BrandingService(config, credits, queue, gemini, storage);
   const reviews = new ProfileReviewService(config, credits, gemini);
   const subs = new SubscriptionsService(config);
   const projects = new ProjectsService();

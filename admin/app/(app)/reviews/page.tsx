@@ -26,7 +26,7 @@ export default function ReviewsPage() {
 
   return (
     <div>
-      <PageHeader title="Profile Reviews" subtitle="Live profile-review jobs from MongoDB." />
+      <PageHeader title="Profile Reviews" subtitle="Profile review volume and photo breakdown." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Reviews" value={fmt(items.length)} icon={<Workflow size={18} />} />
         <StatCard label="Photos Reviewed" value={fmt(photos)} icon={<Images size={18} />} />

@@ -2,6 +2,7 @@ import { loadConfig } from "../config/index.js";
 import { connectDb, disconnectDb } from "../db/index.js";
 import { buildApp } from "../app.js";
 import { tinyJpeg } from "../lib/image-fixtures.js";
+import { pollAiJob } from "./audit-helpers.js";
 
 function flag(name, value, used) {
   const set = value !== undefined && value !== null && String(value).length > 0 && value !== 0;
@@ -160,17 +161,23 @@ async function main() {
     const jobId = gen.body.data?.jobId;
     check("HEADSHOT_AI_PROVIDER generate queued", gen.status === 200 && Boolean(jobId), `jobId=${jobId}`);
 
-    let job;
-    for (let i = 0; i < 20; i += 1) {
-      await new Promise((r) => setTimeout(r, 200));
-      job = await req(app, { method: "GET", url: `/v1/headshots/jobs/${jobId}`, headers: userAuth });
-      if (job.body.data?.status === "completed" || job.body.data?.status === "failed") break;
+    let jobStatus = "missing";
+    let jobImageUrl = false;
+    let jobWaitMs = 0;
+    if (jobId) {
+      const polled = await pollAiJob(async () => {
+        const current = await req(app, { method: "GET", url: `/v1/headshots/jobs/${jobId}`, headers: userAuth });
+        return { status: current.body.data?.status, imageUrl: current.body.data?.imageUrl ?? null };
+      });
+      jobStatus = polled.status;
+      jobImageUrl = Boolean(polled.imageUrl);
+      jobWaitMs = polled.waitMs;
     }
     const mockAi = !config.GEMINI_API_KEY;
     check(
       mockAi ? "GEMINI_API_KEY empty → mock PNG job (dev only)" : "GEMINI_API_KEY set → real generate",
-      job?.status === 200 && job.body.data?.status === "completed",
-      `status=${job?.body.data?.status} mock=${mockAi} imageUrl=${Boolean(job?.body.data?.imageUrl)}`,
+      jobStatus === "completed",
+      `status=${jobStatus} mock=${mockAi} imageUrl=${jobImageUrl} wait=${jobWaitMs}ms`,
     );
 
     const prodGemini = !config.GEMINI_API_KEY && config.NODE_ENV === "production";

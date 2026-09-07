@@ -3,6 +3,7 @@ import { loadConfig } from "../config/index.js";
 import { connectDb, disconnectDb } from "../db/index.js";
 import { tinyJpeg } from "../lib/image-fixtures.js";
 import { NotificationModel, PurchaseModel, UserModel, WebhookEventModel, AiJobModel } from "../models/index.js";
+import { DEFAULT_FETCH_MS, pollAiJob } from "./audit-helpers.js";
 
 type Envelope = { success?: boolean; data?: Record<string, unknown> & { items?: unknown[] }; error?: { code?: string; message?: string } };
 type Row = { name: string; ok: boolean; status: number; detail: string };
@@ -43,12 +44,12 @@ async function main() {
   const req = async (
     method: string,
     path: string,
-    opts: { token?: string; json?: unknown; raw?: Buffer; contentType?: string; apiKey?: string } = {},
+    opts: { token?: string; json?: unknown; raw?: Buffer; contentType?: string; apiKey?: string; timeoutMs?: number } = {},
   ) => {
     const headers: Record<string, string> = {};
     if (opts.token) headers.authorization = `Bearer ${opts.token}`;
     if (opts.apiKey) headers["x-api-key"] = opts.apiKey;
-    let body: BodyInit | undefined;
+    let body: string | Uint8Array | undefined;
     if (opts.raw) {
       headers["content-type"] = opts.contentType ?? "application/octet-stream";
       body = new Uint8Array(opts.raw);
@@ -57,7 +58,12 @@ async function main() {
       body = JSON.stringify(opts.json);
     }
     const started = Date.now();
-    const res = await fetch(`${base}${path}`, { method, headers, body });
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers,
+      body,
+      signal: AbortSignal.timeout(opts.timeoutMs ?? DEFAULT_FETCH_MS),
+    });
     const ms = Date.now() - started;
     let parsed: Envelope = {};
     const text = await res.text();
@@ -169,16 +175,17 @@ async function main() {
 
     let jobStatus = "missing";
     let imageUrl: unknown;
+    let jobWaitMs = 0;
     if (jobId) {
-      for (let i = 0; i < 45; i += 1) {
+      const polled = await pollAiJob(async () => {
         const job = await req("GET", `/headshots/jobs/${jobId}`, { token: userToken });
-        jobStatus = String(job.body.data?.status ?? "missing");
-        imageUrl = job.body.data?.imageUrl;
-        if (jobStatus === "completed" || jobStatus === "failed" || jobStatus === "cancelled") break;
-        await new Promise((r) => setTimeout(r, 1000));
-      }
+        return { status: String(job.body.data?.status ?? "missing"), imageUrl: (job.body.data?.imageUrl as string | null | undefined) ?? null };
+      });
+      jobStatus = polled.status;
+      imageUrl = polled.imageUrl;
+      jobWaitMs = polled.waitMs;
     }
-    check("GET /headshots/jobs/:jobId", jobStatus === "completed" && Boolean(imageUrl), 200, `status=${jobStatus}`);
+    check("GET /headshots/jobs/:jobId", jobStatus === "completed" && Boolean(imageUrl), 200, `status=${jobStatus} wait=${jobWaitMs}ms`);
 
     const cancelMissing = await req("POST", "/headshots/jobs/does-not-exist/cancel", { token: userToken });
     check("POST /headshots/jobs/:jobId/cancel missing → 404", cancelMissing.status === 404, cancelMissing.status);
@@ -194,8 +201,24 @@ async function main() {
     const analyzed = await req("POST", "/branding/analyze", { token: userToken, json: { uploadId: brandingId } });
     check("POST /branding/analyze", analyzed.status === 200, analyzed.status, analyzed.body.error?.message ?? "");
 
+    await new Promise((r) => setTimeout(r, 1500));
     const improved = await req("POST", "/branding/improve", { token: userToken, json: { uploadId: brandingId } });
-    check("POST /branding/improve", improved.status === 200, improved.status, improved.body.error?.message ?? "");
+    const improvementId = String(improved.body.data?.improvementId ?? "");
+    check("POST /branding/improve", improved.status === 200 && improved.body.data?.status === "processing", improved.status, `${improved.ms}ms`);
+
+    let improveStatus = "missing";
+    let improveImage: unknown;
+    let improveWaitMs = 0;
+    if (improvementId) {
+      const polledImprove = await pollAiJob(async () => {
+        const job = await req("GET", `/headshots/jobs/${improvementId}`, { token: userToken });
+        return { status: String(job.body.data?.status ?? "missing"), imageUrl: (job.body.data?.imageUrl as string | null | undefined) ?? null };
+      });
+      improveStatus = polledImprove.status;
+      improveImage = polledImprove.imageUrl;
+      improveWaitMs = polledImprove.waitMs;
+    }
+    check("GET /branding/improve job completed", improveStatus === "completed" && Boolean(improveImage), 200, `status=${improveStatus} wait=${improveWaitMs}ms`);
 
     const photoA = await req("POST", "/headshots/upload", { token: userToken, raw: file.body, contentType: file.contentType });
     const photoB = await req("POST", "/headshots/upload", { token: userToken, raw: file.body, contentType: file.contentType });
@@ -323,6 +346,17 @@ async function main() {
 
   const failed = rows.filter((r) => !r.ok);
   console.log(`\n${rows.length - failed.length}/${rows.length} live endpoint checks passed`);
+  const timed = rows
+    .map((r) => {
+      const m = r.detail.match(/(\d+)ms/);
+      return m ? { name: r.name, ms: Number(m[1]) } : null;
+    })
+    .filter((r): r is { name: string; ms: number } => Boolean(r))
+    .sort((a, b) => b.ms - a.ms);
+  if (timed.length) {
+    console.log("\nSlowest endpoints:");
+    for (const row of timed.slice(0, 8)) console.log(` - ${row.name}: ${row.ms}ms`);
+  }
   if (failed.length) {
     console.log("Failed:");
     for (const row of failed) console.log(` - ${row.name}: [${row.status}] ${row.detail}`);

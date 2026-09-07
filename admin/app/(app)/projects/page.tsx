@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Clock, Folder, LayoutGrid, List, Star, HardDrive } from "lucide-react";
 import { api } from "@/lib/api";
-import { fmt, when } from "@/lib/format";
+import { countBy, fmt, when } from "@/lib/format";
 import { Badge, Card, Input, PageHeader, Select, StatCard } from "@/components/ui";
 import { clsx } from "@/components/clsx";
 
@@ -20,16 +20,37 @@ export default function ProjectsPage() {
 
   const favorites = items.filter((p) => p.isFavorite).length;
   const today = items.filter((p) => p.updatedAt && new Date(p.updatedAt).toDateString() === new Date().toDateString()).length;
+  const byTool = countBy(items, (p) => (p.toolType || "Other").replaceAll("_", " "));
+  const storageTotal = byTool.reduce((s, t) => s + t.value, 0) || 1;
 
   return (
     <div>
-      <PageHeader title="Projects & Library" subtitle="Live cloud-synced projects from MongoDB." />
+      <PageHeader title="Projects & Library" subtitle="Browse user projects synced from the mobile app." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Projects" value={fmt(items.length)} icon={<Folder size={18} />} />
         <StatCard label="Favorites" value={fmt(favorites)} tone="warning" icon={<Star size={18} />} />
         <StatCard label="In this list" value={fmt(items.length)} tone="purple" icon={<HardDrive size={18} />} />
         <StatCard label="Updated Today" value={fmt(today)} tone="success" icon={<Clock size={18} />} />
       </div>
+      {byTool.length ? (
+        <Card className="mt-4 p-4">
+          <div className="mb-4 text-sm font-medium">Library storage by tool</div>
+          {byTool.map((t) => {
+            const pct = Math.round((t.value / storageTotal) * 100);
+            return (
+              <div key={t.name} className="mb-4 last:mb-0">
+                <div className="mb-1 flex justify-between text-sm">
+                  <span className="text-subtle">{t.name}</span>
+                  <span>{pct}% · {fmt(t.value)}</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div className="h-2 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+      ) : null}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Input placeholder="Search project, user or ID" className="max-w-sm" />
         <Select><option>Tool Type</option></Select>

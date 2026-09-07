@@ -5,6 +5,8 @@ import { AlertTriangle, CheckCircle2, Loader2, Workflow } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmt, when } from "@/lib/format";
 import { Badge, Card, Input, PageHeader, Pagination, Select, StatCard, Tabs } from "@/components/ui";
+import { BarCard } from "@/components/charts";
+import { trendHint } from "@/lib/chart-data";
 
 type Job = {
   jobId?: string;
@@ -56,16 +58,28 @@ export default function JobsPage() {
 
   const completed = items.filter((j) => j.status === "completed").length;
   const failed = items.filter((j) => j.status === "failed").length;
+  const queued = queue.queued ?? items.filter((j) => j.status === "queued").length;
+  const running = queue.running ?? queue.processing ?? items.filter((j) => j.status === "processing").length;
+  const statusBars = [
+    { label: "Queued", n: queued },
+    { label: "Running", n: running },
+    { label: "Completed", n: completed },
+    { label: "Failed", n: failed },
+  ];
 
   return (
     <div>
       <PageHeader title="AI Jobs" subtitle="Queue, retries, and provider outcomes across all generation tools." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="In Queue" value={fmt(queue.queued ?? items.filter((j) => j.status === "queued").length)} icon={<Loader2 size={18} />} />
-        <StatCard label="Running" value={fmt(queue.running ?? queue.processing ?? items.filter((j) => j.status === "processing").length)} tone="info" icon={<Workflow size={18} />} />
-        <StatCard label="Completed" value={fmt(completed)} tone="success" icon={<CheckCircle2 size={18} />} />
-        <StatCard label="Failed" value={fmt(failed)} tone="danger" icon={<AlertTriangle size={18} />} />
+        <StatCard label="In Queue" value={fmt(queued)} hint={trendHint(queued)} icon={<Loader2 size={18} />} />
+        <StatCard label="Running" value={fmt(running)} hint={trendHint(running)} tone="info" icon={<Workflow size={18} />} />
+        <StatCard label="Completed" value={fmt(completed)} hint={trendHint(completed)} tone="success" icon={<CheckCircle2 size={18} />} />
+        <StatCard label="Failed" value={fmt(failed)} hint={trendHint(failed)} tone="danger" icon={<AlertTriangle size={18} />} />
       </div>
+      <Card className="mt-4 p-4">
+        <div className="mb-3 text-sm font-medium">Jobs by status</div>
+        <BarCard data={statusBars} dataKey="n" />
+      </Card>
       <Card className="mt-4 overflow-hidden">
         <div className="px-4 pt-3">
           <Tabs

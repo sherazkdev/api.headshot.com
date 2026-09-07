@@ -4,14 +4,10 @@ import { buildApp } from "../app.js";
 import { tinyJpeg } from "../lib/image-fixtures.js";
 import { NotificationModel, UserModel } from "../models/index.js";
 import { verifyPlaySubscription } from "../lib/play-billing.js";
+import { pollAiJob } from "./audit-helpers.js";
 
 type Envelope<T = unknown> = { success?: boolean; data?: T; error?: { code?: string; message?: string } };
-
-type CaseResult = { name: string; ok: boolean; detail: string };
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+type CaseResult = { name: string; ok: boolean; detail: string; ms?: number };
 
 function multipartPhoto(purpose = "headshot") {
   const boundary = "----HeadshotVerifyBoundary";
@@ -40,10 +36,11 @@ async function main() {
   const userToken = app.jwt.sign({ sub: uid, email: `${uid}@test.local`, kind: "user", name: "Verify User" }, { expiresIn: "2h" });
   const userAuth = { authorization: `Bearer ${userToken}` };
 
-  const check = (name: string, ok: boolean, detail: string) => {
-    results.push({ name, ok, detail });
+  const check = (name: string, ok: boolean, detail: string, ms?: number) => {
+    results.push({ name, ok, detail, ms });
     const mark = ok ? "PASS" : "FAIL";
-    console.log(`${mark}  ${name}${detail ? ` — ${detail}` : ""}`);
+    const timing = ms !== undefined ? ` (${ms}ms)` : "";
+    console.log(`${mark}  ${name}${detail ? ` — ${detail}` : ""}${timing}`);
   };
 
   const inject = async (opts: {
@@ -392,16 +389,17 @@ async function main() {
     });
     check("Generate idempotency 409", genReplay.status === 409, `status ${genReplay.status}`);
 
-    let jobStatus = "processing";
-    let imageUrl: string | null = null;
-    for (let i = 0; i < 40; i += 1) {
+    const polled = await pollAiJob(async () => {
       const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${jobId}`, headers: userAuth });
-      jobStatus = String((job.body.data as { status?: string } | undefined)?.status ?? "missing");
-      imageUrl = (job.body.data as { imageUrl?: string } | undefined)?.imageUrl ?? null;
-      if (jobStatus === "completed" || jobStatus === "failed") break;
-      await sleep(50);
-    }
-    check("GET /headshots/jobs/:id completed", jobStatus === "completed" && Boolean(imageUrl), `status=${jobStatus}`);
+      const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
+      return { status: data?.status, imageUrl: data?.imageUrl ?? null };
+    });
+    check(
+      "GET /headshots/jobs/:id completed",
+      polled.status === "completed" && Boolean(polled.imageUrl),
+      `status=${polled.status} polls=${polled.polls}`,
+      polled.waitMs,
+    );
 
     const resultsList = await inject({ method: "GET", url: "/v1/headshots/results", headers: userAuth });
     check("GET /headshots/results", resultsList.status === 200, `status ${resultsList.status}`);
@@ -427,21 +425,31 @@ async function main() {
 
     const beforeImprove = await inject({ method: "GET", url: "/v1/credits", headers: userAuth });
     const spendableBefore = Number((beforeImprove.body.data as { spendableCredits?: number })?.spendableCredits ?? 0);
+    const improveStarted = Date.now();
     const improved = await inject({
       method: "POST",
       url: "/v1/branding/improve",
       headers: userAuth,
       payload: { uploadId: brandingId },
     });
+    const improvementId = (improved.body.data as { improvementId?: string } | undefined)?.improvementId;
+    check("POST /branding/improve queued", improved.status === 200 && Boolean(improvementId), `status ${improved.status}`);
+
+    const polledImprove = await pollAiJob(async () => {
+      const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${improvementId}`, headers: userAuth });
+      const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
+      return { status: data?.status, imageUrl: data?.imageUrl ?? null };
+    });
+    const improveMs = Date.now() - improveStarted;
     const afterImprove = await inject({ method: "GET", url: "/v1/credits", headers: userAuth });
     const spendableAfter = Number((afterImprove.body.data as { spendableCredits?: number })?.spendableCredits ?? 0);
     check(
       "POST /branding/improve deducts 100 not 150",
-      improved.status === 200 &&
-        (improved.body.data as { creditsDeducted?: number })?.creditsDeducted === 100 &&
-        spendableBefore - spendableAfter === 100 &&
-        Boolean((improved.body.data as { imageUrl?: string })?.imageUrl),
-      `delta=${spendableBefore - spendableAfter} status=${improved.status}`,
+      polledImprove.status === "completed" &&
+        Boolean(polledImprove.imageUrl) &&
+        spendableBefore - spendableAfter === 100,
+      `delta=${spendableBefore - spendableAfter} status=${polledImprove.status} wait=${polledImprove.waitMs}ms`,
+      improveMs,
     );
 
     const photoA = await inject({
@@ -575,7 +583,12 @@ async function main() {
   }
 
   const failed = results.filter((r) => !r.ok);
+  const timed = results.filter((r) => r.ms !== undefined).sort((a, b) => (b.ms ?? 0) - (a.ms ?? 0));
   console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
+  if (timed.length) {
+    console.log("\nSlowest endpoints:");
+    for (const row of timed.slice(0, 8)) console.log(` - ${row.name}: ${row.ms}ms`);
+  }
   if (failed.length) {
     console.log("Failed:");
     for (const row of failed) console.log(` - ${row.name}: ${row.detail}`);

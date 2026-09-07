@@ -28,7 +28,7 @@ export default function NotificationsPage() {
     <div>
       <PageHeader
         title="Notifications"
-        subtitle="Live notification rows from MongoDB."
+        subtitle="In-app notification delivery and read rates."
         actions={<><Button variant="outline"><CheckSquare size={14} /> Mark all as read</Button><Button variant="outline">Export CSV</Button></>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

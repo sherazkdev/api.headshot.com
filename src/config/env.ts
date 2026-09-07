@@ -59,6 +59,7 @@ const envSchema = z.object({
   MAX_INFLIGHT_AI: z.coerce.number().default(32),
   IDEMPOTENCY_TTL_HOURS: z.coerce.number().default(24),
   MAX_UPLOAD_MB: z.coerce.number().default(10),
+  AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(180_000),
 });
 
 export type AppConfig = z.infer<typeof envSchema> & {

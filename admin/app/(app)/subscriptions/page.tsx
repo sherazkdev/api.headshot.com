@@ -24,7 +24,7 @@ export default function SubscriptionsPage() {
 
   return (
     <div>
-      <PageHeader title="Subscriptions" subtitle="Live premium users from MongoDB." />
+      <PageHeader title="Subscriptions" subtitle="Track premium passes and plan distribution." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Active Passes" value={fmt(active)} icon={<CreditCard size={18} />} />
         <StatCard label="Listed" value={fmt(items.length)} tone="success" icon={<RefreshCw size={18} />} />

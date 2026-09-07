@@ -27,7 +27,7 @@ export default function HeadshotsPage() {
 
   return (
     <div>
-      <PageHeader title="Headshot Generations" subtitle="Live headshot jobs from MongoDB." />
+      <PageHeader title="Headshot Generations" subtitle="Generation volume, success rate, and provider mix." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Generations" value={fmt(items.length)} icon={<ImageIcon size={18} />} />
         <StatCard label="Completed" value={fmt(completed)} hint={items.length ? `${Math.round((completed / items.length) * 100)}% success` : "No jobs"} tone="success" icon={<CheckCircle2 size={18} />} />

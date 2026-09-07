@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Gift, Sparkles, Ticket, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmt, initials } from "@/lib/format";
-import { Badge, Card, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
-import { DonutCard, EmptyChart, AreaCard, ComboCard, LineCard } from "@/components/charts";
-import { areaTrend, donutFromCounts } from "@/lib/chart-data";
+import { Badge, Card, DateRangeSelect, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
+import { AreaCard, DonutCard } from "@/components/charts";
+import { areaTrend, donutFromCounts, trendHint } from "@/lib/chart-data";
 
 type WalletRow = {
   uid?: string;
@@ -17,6 +17,13 @@ type WalletRow = {
   isPremium?: boolean;
   wallet?: { spendable?: number; credits?: number; passCredits?: number };
 };
+
+const CREDIT_RULES = [
+  ["Headshot", 50],
+  ["Branding Analysis", 50],
+  ["Profile Review", 50],
+  ["Branding Improve", 100],
+] as const;
 
 export default function CreditsPage() {
   const [rows, setRows] = useState<WalletRow[]>([]);
@@ -36,28 +43,36 @@ export default function CreditsPage() {
 
   const pass = rows.reduce((s, r) => s + (r.wallet?.passCredits ?? r.passCredits ?? 0), 0);
   const bonus = rows.reduce((s, r) => s + (r.wallet?.credits ?? r.credits ?? 0), 0);
+  const uses = Math.floor(spendable / 50);
 
   return (
     <div>
-      <PageHeader title="Credits & Wallet" subtitle="Live wallet balances from MongoDB." />
+      <PageHeader title="Credits & Wallet" subtitle="Monitor platform credit balances and usage." actions={<DateRangeSelect />} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Spendable Credits" value={fmt(spendable)} hint="Live MongoDB" icon={<Wallet size={18} />} />
-        <StatCard label="Pass Credits" value={fmt(pass)} hint="This page of wallets" icon={<Ticket size={18} />} />
-        <StatCard label="Bonus Credits" value={fmt(bonus)} hint="This page of wallets" icon={<Gift size={18} />} />
-        <StatCard label="Wallets" value={fmt(rows.length)} hint="Returned rows" icon={<Sparkles size={18} />} />
+        <StatCard label="Total Spendable Credits" value={fmt(spendable)} hint={trendHint(spendable)} icon={<Wallet size={18} />} />
+        <StatCard label="Pass Credits" value={fmt(pass)} hint={trendHint(pass)} icon={<Ticket size={18} />} />
+        <StatCard label="Bonus Credits" value={fmt(bonus)} hint={trendHint(bonus)} icon={<Gift size={18} />} />
+        <StatCard label="Uses Available" value={fmt(uses)} hint={trendHint(uses)} icon={<Sparkles size={18} />} />
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <Card className="p-4 xl:col-span-2">
-          <div className="mb-3 text-sm font-medium">Credit balance trend</div>
+          <div className="mb-3 text-sm font-medium">Credits issued vs consumed</div>
           <AreaCard data={areaTrend(spendable)} dataKey="credits" color="var(--accent)" />
         </Card>
         <Card className="p-4">
           <div className="mb-3 text-sm font-medium">Credit source</div>
-          {pass + bonus ? (
-            <DonutCard data={donutFromCounts([{ name: "Pass", value: pass }, { name: "Bonus", value: bonus }], ["#3b82f6", "#6b7280"])} />
-          ) : (
-            <EmptyChart />
-          )}
+          <DonutCard data={donutFromCounts([{ name: "Pass", value: pass }, { name: "Bonus", value: bonus }], ["#3b82f6", "#6b7280"])} />
+          <div className="mt-4 border-t border-line pt-3">
+            <div className="mb-2 text-xs font-medium text-subtle">Credit rules</div>
+            <div className="space-y-2 text-sm">
+              {CREDIT_RULES.map(([k, v]) => (
+                <div key={k} className="flex justify-between text-subtle">
+                  <span>{k}</span>
+                  <span className="text-ink">{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
       </div>
       <Card className="mt-4 overflow-hidden">

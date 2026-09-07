@@ -24,7 +24,7 @@ export default function WebhooksPage() {
 
   return (
     <div>
-      <PageHeader title="Webhooks / Events" subtitle="Live inbound events from MongoDB." actions={<Button variant="outline">Replay selected</Button>} />
+      <PageHeader title="Webhooks / Events" subtitle="Monitor inbound webhook events and delivery health." actions={<Button variant="outline">Replay selected</Button>} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Events" value={fmt(items.length)} icon={<Webhook size={18} />} />
         <StatCard label="Processed" value={fmt(processed)} tone="success" icon={<CheckCircle2 size={18} />} />

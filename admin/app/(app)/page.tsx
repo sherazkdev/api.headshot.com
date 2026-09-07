@@ -5,9 +5,9 @@ import Link from "next/link";
 import { CreditCard, Sparkles, Users, Wallet } from "lucide-react";
 import { api } from "@/lib/api";
 import { countBy, fmt, initials, when } from "@/lib/format";
-import { Badge, Card, PageHeader, Select, StatCard } from "@/components/ui";
-import { BarCard, DonutCard, EmptyChart, LineCard } from "@/components/charts";
-import { donutFromCounts, lineTrend } from "@/lib/chart-data";
+import { Badge, Card, DateRangeSelect, PageHeader, StatCard } from "@/components/ui";
+import { BarCard, DonutCard, DualLineCard, EmptyChart } from "@/components/charts";
+import { donutFromCounts, trendHint, usersGenerationsSeries } from "@/lib/chart-data";
 
 type Overview = {
   totalUsers?: number;
@@ -51,24 +51,32 @@ export default function OverviewPage() {
   const pct = (id: string) => Math.round((statusN(id) / statusTotal) * 100);
   const planMix = countBy(subs, (s) => s.premiumPlanName || "Unknown");
   const bars = byType.map((t) => ({ label: (t._id || "other").replaceAll("_", " "), n: t.n }));
+  const users = Number(data.totalUsers ?? 0);
+  const generations = Number(data.aiGenerations ?? 0);
 
   return (
     <div>
       <PageHeader
         title="Overview"
-        subtitle="Live totals from MongoDB"
-        actions={<Select className="w-40"><option>All time</option></Select>}
+        subtitle="Platform health and business performance"
+        actions={<DateRangeSelect />}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Users" value={live ? fmt(Number(data.totalUsers ?? 0)) : "—"} hint="Live MongoDB" icon={<Users size={18} />} />
-        <StatCard label="Spendable Credits" value={live ? fmt(Number(data.spendableCredits ?? 0)) : "—"} hint="Live MongoDB" icon={<Wallet size={18} />} />
-        <StatCard label="Active Subscriptions" value={live ? fmt(Number(data.premium ?? 0)) : "—"} hint="Live MongoDB" icon={<CreditCard size={18} />} />
-        <StatCard label="AI Generations" value={live ? fmt(Number(data.aiGenerations ?? 0)) : "—"} hint="Headshot jobs" icon={<Sparkles size={18} />} />
+        <StatCard label="Total Users" value={live ? fmt(users) : "—"} hint={trendHint(users)} icon={<Users size={18} />} />
+        <StatCard label="Spendable Credits" value={live ? fmt(Number(data.spendableCredits ?? 0)) : "—"} hint={trendHint(Number(data.spendableCredits ?? 0))} icon={<Wallet size={18} />} />
+        <StatCard label="Active Subscriptions" value={live ? fmt(Number(data.premium ?? 0)) : "—"} hint={trendHint(Number(data.premium ?? 0))} icon={<CreditCard size={18} />} />
+        <StatCard label="AI Generations" value={live ? fmt(generations) : "—"} hint={trendHint(generations)} icon={<Sparkles size={18} />} />
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-3">
         <Card className="p-4 xl:col-span-2">
-          <div className="mb-3 text-sm font-medium">User growth trend</div>
-          <LineCard data={lineTrend(Number(data.totalUsers ?? 0))} lines={[{ key: "value", color: "var(--accent)" }]} />
+          <div className="mb-1 text-sm font-medium">Users & Generations</div>
+          <DualLineCard
+            data={usersGenerationsSeries(users, generations)}
+            primaryKey="users"
+            secondaryKey="generations"
+            primaryLabel="Users"
+            secondaryLabel="Generations"
+          />
         </Card>
         <Card className="p-4">
           <div className="mb-3 text-sm font-medium">Subscription mix</div>
@@ -85,24 +93,13 @@ export default function OverviewPage() {
           {bars.length ? <BarCard data={bars} dataKey="n" /> : <EmptyChart />}
         </Card>
         <Card className="p-4">
-          <div className="mb-3 text-sm font-medium">Queue snapshot</div>
-          <div className="space-y-2 text-sm text-subtle">
-            <div className="flex justify-between"><span>Completed</span><span className="text-ink">{fmt(statusN("completed"))}</span></div>
-            <div className="flex justify-between"><span>Processing</span><span className="text-ink">{fmt(statusN("processing"))}</span></div>
-            <div className="flex justify-between"><span>Failed</span><span className="text-ink">{fmt(statusN("failed"))}</span></div>
-            <div className="flex justify-between"><span>Queued</span><span className="text-ink">{fmt(statusN("queued"))}</span></div>
-          </div>
-        </Card>
-      </div>
-      <div className="mt-4 grid gap-4 xl:grid-cols-3">
-        <Card className="p-4 xl:col-span-2">
           <div className="mb-4 text-sm font-medium">AI job health</div>
           {([
             ["Completed", pct("completed"), "bg-accent"],
             ["Processing", pct("processing"), "bg-info"],
             ["Failed", pct("failed"), "bg-[var(--purple)]"],
           ] as const).map(([label, value, bar]) => (
-            <div key={label} className="mb-4">
+            <div key={label} className="mb-4 last:mb-0">
               <div className="mb-1 flex justify-between text-sm">
                 <span className="text-subtle">{label}</span>
                 <span>{live ? `${value}%` : "—"}</span>

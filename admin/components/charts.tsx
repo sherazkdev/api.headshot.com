@@ -54,6 +54,40 @@ export function LineCard({ data, lines }: { data: Array<Record<string, string | 
   );
 }
 
+export function DualLineCard({
+  data,
+  primaryKey,
+  secondaryKey,
+  primaryLabel,
+  secondaryLabel,
+}: {
+  data: Array<Record<string, string | number>>;
+  primaryKey: string;
+  secondaryKey: string;
+  primaryLabel: string;
+  secondaryLabel: string;
+}) {
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-4 text-xs text-subtle">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-0.5 w-4 rounded-full bg-accent" /> {primaryLabel}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-px w-4 border-t border-dashed border-info" /> {secondaryLabel}
+        </span>
+      </div>
+      <LineCard
+        data={data}
+        lines={[
+          { key: primaryKey, color: "var(--accent)" },
+          { key: secondaryKey, color: "var(--info)", dashed: true },
+        ]}
+      />
+    </div>
+  );
+}
+
 export function AreaCard({ data, dataKey, color }: { data: Array<Record<string, string | number>>; dataKey: string; color: string }) {
   return (
     <div className="h-64 w-full">
@@ -145,12 +179,3 @@ export function DonutCard({ data }: { data: Array<{ name: string; value: number;
 export function EmptyChart({ label = "No data in MongoDB yet." }: { label?: string }) {
   return <div className="flex h-64 items-center justify-center text-sm text-subtle">{label}</div>;
 }
-
-export const SERIES = [
-  { label: "Apr 28", a: 4200, b: 3800, c: 92, d: 61 },
-  { label: "May 5", a: 5100, b: 4300, c: 94, d: 72 },
-  { label: "May 12", a: 4800, b: 4600, c: 95, d: 68 },
-  { label: "May 19", a: 6200, b: 5100, c: 97, d: 81 },
-  { label: "May 26", a: 7100, b: 5600, c: 96, d: 88 },
-  { label: "Jun 2", a: 6800, b: 5900, c: 98, d: 79 },
-];

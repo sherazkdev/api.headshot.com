@@ -5,7 +5,8 @@ import { Bell, Send, Smartphone, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmt, when } from "@/lib/format";
 import { Banner, Button, Card, Input, PageHeader, Select, StatCard, Tabs } from "@/components/ui";
-import { DonutCard, EmptyChart } from "@/components/charts";
+import { DonutCard, AreaCard } from "@/components/charts";
+import { areaTrend } from "@/lib/chart-data";
 
 type Token = { uid?: string; email?: string; token?: string; platform?: string; lastSeen?: string };
 type Hist = { notificationId?: string; title?: string; delivery?: string; createdAt?: string };
@@ -82,16 +83,9 @@ export default function FcmPage() {
         <Card className="p-4 xl:col-span-2">
           <div className="mb-3 text-sm font-medium">Campaign history</div>
           {history.length ? (
-            <div className="space-y-2 text-sm">
-              {history.slice(0, 8).map((c) => (
-                <div key={c.notificationId} className="flex items-center justify-between rounded-card border border-line px-3 py-2">
-                  <span>{c.title}</span>
-                  <span className="text-subtle">{c.delivery} · {when(c.createdAt)}</span>
-                </div>
-              ))}
-            </div>
+            <AreaCard data={areaTrend(history.length)} dataKey="credits" color="var(--accent)" />
           ) : (
-            <EmptyChart label="No FCM campaigns in MongoDB yet." />
+            <div className="flex h-64 items-center justify-center text-sm text-subtle">No FCM campaigns yet.</div>
           )}
         </Card>
         <Card className="p-4">
@@ -105,7 +99,7 @@ export default function FcmPage() {
               ].filter((d) => d.value > 0)}
             />
           ) : (
-            <EmptyChart label="No device tokens registered." />
+            <div className="flex h-64 items-center justify-center text-sm text-subtle">No device tokens registered.</div>
           )}
         </Card>
       </div>

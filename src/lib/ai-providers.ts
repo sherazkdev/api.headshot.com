@@ -28,6 +28,8 @@ const MOCK_BRANDING = {
   enhancementPrompt: "Keep the same person. Improve lighting evenness, clean the background, sharpen eyes.",
 };
 
+const GEMINI_TIMEOUT_MS = 120_000;
+
 export class GeminiClient {
   constructor(private readonly config: AppConfig) {}
 
@@ -56,6 +58,7 @@ export class GeminiClient {
         ],
         generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
       }),
+      signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
     });
     if (res.status === 429) throw errors.aiBusy();
     if (!res.ok) throw errors.server(`Gemini generate failed (${res.status})`);
@@ -103,6 +106,7 @@ export class GeminiClient {
         ],
         generationConfig: { responseMimeType: "application/json" },
       }),
+      signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
     });
     if (res.status === 429) throw errors.aiBusy();
     if (!res.ok) throw errors.server(`Gemini vision failed (${res.status})`);

@@ -24,7 +24,7 @@ export default function BrandingPage() {
 
   return (
     <div>
-      <PageHeader title="Branding Analysis" subtitle="Live branding jobs from MongoDB." />
+      <PageHeader title="Branding Analysis" subtitle="Branding analysis volume and score trends." />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Analyses" value={fmt(items.length)} icon={<Sparkles size={18} />} />
         <StatCard label="Average Score" value={fmt(avg)} tone="success" icon={<Star size={18} />} />
