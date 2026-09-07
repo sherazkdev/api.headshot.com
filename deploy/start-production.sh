@@ -54,10 +54,13 @@ curl -fsS "http://127.0.0.1:${API_PORT}/v1/health" && echo "PM2 OK on :${API_POR
   exit 1
 }
 
-# 3) Disable old port-3016 nginx proxy (conflict)
-rm -f "$OLD_SITE" 2>/dev/null || true
+# 3) Sirf purana headshot-api proxy hatao (3016) — baaki sites NA
+if [[ -f "$OLD_SITE" ]]; then
+  echo "Removing only our old site: $OLD_SITE"
+  rm -f "$OLD_SITE"
+fi
 
-# 4) nginx SSL config
+# 4) nginx SSL — sirf headshot-api-ssl file
 echo ""
 echo ">>> nginx SSL config..."
 DOMAIN="$DOMAIN" APP_ROOT="$APP_DIR" bash deploy/nginx/render-ssl-config.sh
@@ -65,6 +68,15 @@ DOMAIN="$DOMAIN" APP_ROOT="$APP_DIR" bash deploy/nginx/render-ssl-config.sh
 if [[ ! -d /etc/nginx/sites-available ]]; then
   echo "ERROR: nginx not installed"
   exit 1
+fi
+
+if grep -rl "server_name.*${DOMAIN}" /etc/nginx/sites-enabled/ 2>/dev/null | grep -qv "${SITE_SSL}"; then
+  echo ""
+  echo "WARN: ${DOMAIN} already in another nginx site — standalone SSL site skip."
+  echo "Add to that site's server { } block:"
+  echo "  include ${APP_DIR}/deploy/nginx/headshot-api-locations.conf;"
+  echo "Then: nginx -t && nginx -s reload"
+  exit 0
 fi
 
 cp deploy/nginx/headshot-api-ssl.conf "$AVAILABLE"
