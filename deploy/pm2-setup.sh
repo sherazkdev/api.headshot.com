@@ -19,7 +19,9 @@ if [[ ! -f dist/server.js ]]; then
   npm run build:api
 fi
 
+pm2 stop headshot-api 2>/dev/null || true
 pm2 delete headshot-api 2>/dev/null || true
+
 APP_DIR="$APP_DIR" pm2 start deploy/ecosystem.config.cjs
 pm2 save
 

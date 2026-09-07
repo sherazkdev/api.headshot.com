@@ -58,7 +58,6 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
     connectionTimeout: 10_000,
     keepAliveTimeout: 72_000,
     bodyLimit: config.MAX_UPLOAD_MB * 1024 * 1024,
-    disableRequestLogging: false,
   });
 
   await app.register(helmet, { contentSecurityPolicy: false });
