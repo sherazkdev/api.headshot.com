@@ -18,6 +18,14 @@ async function seed() {
   });
   console.log("Seeded remote config + first API key (copy once):");
   console.log(created.plaintext);
+  console.log("");
+  console.log("Admin portal login (.env se — DB mein user create nahi hota):");
+  console.log(`  email:    ${config.ADMIN_EMAIL}`);
+  console.log("  password: value of ADMIN_PASSWORD in .env");
+  console.log("");
+  console.log("API start:");
+  console.log("  pm2 start deploy/ecosystem.config.cjs");
+  console.log("  # ya: npm start");
   await disconnectDb();
 }
 
