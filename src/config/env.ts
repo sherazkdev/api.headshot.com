@@ -23,9 +23,11 @@ function loadDotEnv() {
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(3000),
+  /** 127.0.0.1 when nginx SSL proxy; 0.0.0.0 for direct exposure */
+  BIND_HOST: z.string().default("0.0.0.0"),
   API_BASE_PATH: z.string().default("/v1"),
   ADMIN_ORIGIN: z.string().default("http://localhost:3001"),
-  /** Public URL clients use (nginx :3016). Example: http://203.0.113.10:3016 */
+  /** Public HTTPS URL — e.g. https://aiheadshotapi.com */
   PUBLIC_BASE_URL: z.string().optional().default(""),
   MONGODB_URI: z
     .string()
