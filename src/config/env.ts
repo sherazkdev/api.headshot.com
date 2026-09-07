@@ -23,6 +23,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   API_BASE_PATH: z.string().default("/v1"),
   ADMIN_ORIGIN: z.string().default("http://localhost:3001"),
+  /** Public URL clients use (nginx :3016). Example: http://203.0.113.10:3016 */
+  PUBLIC_BASE_URL: z.string().optional().default(""),
   MONGODB_URI: z.string().min(1),
   ADMIN_EMAIL: z.string().email(),
   ADMIN_PASSWORD: z.string().min(8),

@@ -31,6 +31,8 @@ export class LocalStorage {
 
   url(filePath: string, config: AppConfig): string {
     const rel = filePath.replace(process.cwd(), "").replace(/\\/g, "/");
-    return `http://127.0.0.1:${config.PORT}${rel.startsWith("/") ? rel : `/${rel}`}`;
+    const pathPart = rel.startsWith("/") ? rel : `/${rel}`;
+    const base = config.PUBLIC_BASE_URL?.replace(/\/$/, "") || `http://127.0.0.1:${config.PORT}`;
+    return `${base}${pathPart}`;
   }
 }
