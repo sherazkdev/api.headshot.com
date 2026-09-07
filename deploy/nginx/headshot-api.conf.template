@@ -1,17 +1,11 @@
-# Headshot API — nginx reverse proxy (port 3016)
-# No sudo. Apni existing nginx mein ye file include karo:
-#   include /path/to/headshot-api/deploy/nginx/headshot-api.conf;
+# Headshot API — nginx reverse proxy (optional)
+# Render: bash deploy/nginx/render-config.sh
 #
-# Pehle APP path set karo (ek bar):
-#   bash deploy/nginx/render-config.sh
-#
-# Phir nginx reload:
-#   nginx -t && nginx -s reload
-#
-# API chalni chahiye: 127.0.0.1:3000  (bash deploy/start-api.sh)
+# Sirf tab use karo jab .env mein PORT=3000 ho (nginx :3016 → node :3000).
+# Default production: PORT=3016 — PM2 direct, is nginx file include NA karo.
 
 upstream headshot_api_backend {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:__API_PORT__;
     keepalive 32;
 }
 

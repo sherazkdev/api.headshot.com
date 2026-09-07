@@ -9,7 +9,8 @@ async function boot() {
   await connectDb(config);
   const app = await buildApp(config);
   await app.listen({ port: config.PORT, host: "0.0.0.0" });
-  app.log.info(`Headshot API listening on :${config.PORT}${config.API_BASE_PATH}`);
+  const publicUrl = config.PUBLIC_BASE_URL || `http://127.0.0.1:${config.PORT}`;
+  app.log.info(`Headshot API listening on 0.0.0.0:${config.PORT}${config.API_BASE_PATH} (public: ${publicUrl})`);
 }
 
 function main() {

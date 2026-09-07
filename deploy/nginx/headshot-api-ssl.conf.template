@@ -3,7 +3,7 @@
 # Domain DNS must point to VPS IP before certbot.
 
 upstream headshot_api_backend {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:__API_PORT__;
     keepalive 32;
 }
 

@@ -19,7 +19,13 @@ OUTPUT="$SCRIPT_DIR/headshot-api-ssl.conf"
 
 mkdir -p "$APP_ROOT/logs/certbot"
 
-sed -e "s|__APP_ROOT__|${APP_ROOT}|g" -e "s|__DOMAIN__|${DOMAIN}|g" "$TEMPLATE" > "$OUTPUT"
+API_PORT="3016"
+if [[ -f "$APP_ROOT/.env" ]]; then
+  API_PORT="$(grep -E '^PORT=' "$APP_ROOT/.env" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs || true)"
+  API_PORT="${API_PORT:-3016}"
+fi
+
+sed -e "s|__APP_ROOT__|${APP_ROOT}|g" -e "s|__DOMAIN__|${DOMAIN}|g" -e "s|__API_PORT__|${API_PORT}|g" "$TEMPLATE" > "$OUTPUT"
 
 echo "Rendered: $OUTPUT"
 echo "DOMAIN=$DOMAIN"
