@@ -1,0 +1,77 @@
+# Headshot API — HTTPS (SSL) nginx template
+# Render: bash deploy/nginx/render-ssl-config.sh
+# Domain DNS must point to VPS IP before certbot.
+
+upstream headshot_api_backend {
+    server 127.0.0.1:3000;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__;
+
+    # certbot webroot (first time SSL)
+    location /.well-known/acme-challenge/ {
+        root __APP_ROOT__/logs/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name __DOMAIN__;
+
+    ssl_certificate     /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    client_max_body_size 12m;
+
+    access_log __APP_ROOT__/logs/nginx-headshot-api-ssl.access.log;
+    error_log  __APP_ROOT__/logs/nginx-headshot-api-ssl.error.log warn;
+
+    location /uploads/ {
+        alias __APP_ROOT__/uploads/;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location /generated/ {
+        alias __APP_ROOT__/generated/;
+        expires 1d;
+        add_header Cache-Control "public";
+        try_files $uri =404;
+    }
+
+    location /docs {
+        proxy_pass http://headshot_api_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://headshot_api_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 10s;
+        proxy_send_timeout    180s;
+        proxy_read_timeout    180s;
+        send_timeout          180s;
+    }
+}

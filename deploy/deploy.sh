@@ -14,7 +14,8 @@ npm run build:api
 APP_ROOT="$APP_DIR" bash deploy/nginx/render-config.sh
 
 if command -v pm2 >/dev/null 2>&1; then
-  pm2 restart headshot-api || pm2 start deploy/ecosystem.config.cjs
+  pm2 restart headshot-api || APP_DIR="$APP_DIR" pm2 start deploy/ecosystem.config.cjs
+  pm2 save 2>/dev/null || true
 else
   bash deploy/start-api.sh
 fi
