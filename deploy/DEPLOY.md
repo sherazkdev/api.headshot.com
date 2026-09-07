@@ -132,7 +132,21 @@ GOOGLE_PLAY_VERIFY_ENABLED=false
 
 ---
 
-## 3) PM2 start (tum yahi use karte ho)
+## 3) Database seed + indexes (pehli bar)
+
+```bash
+cd /var/www/headshot-api
+npm run seed    # remote config + API key
+npm run index   # MongoDB indexes (users, jobs, credits, etc.)
+```
+
+`npm run index` = MongoDB collections par saari indexes banata/sync karta hai (fast queries).
+
+Admin login `.env` se hota hai — `ADMIN_EMAIL` + `ADMIN_PASSWORD`.
+
+---
+
+## 4) PM2 start
 
 ```bash
 cd ~/headshot-api

@@ -23,6 +23,7 @@
     "pm2:logs": "pm2 logs headshot-api",
     "lint": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx src/scripts/seed.ts",
+    "index": "tsx src/scripts/index-db.ts",
     "seed:demo": "tsx src/scripts/seed-demo.ts",
     "test": "tsx src/scripts/verify-api.ts",
     "verify": "tsx src/scripts/verify-api.ts"

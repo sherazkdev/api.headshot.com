@@ -24,8 +24,8 @@ async function seed() {
   console.log("  password: value of ADMIN_PASSWORD in .env");
   console.log("");
   console.log("API start:");
+  console.log("  npm run index   # MongoDB indexes (pehli deploy par)");
   console.log("  pm2 start deploy/ecosystem.config.cjs");
-  console.log("  # ya: npm start");
   await disconnectDb();
 }
 
