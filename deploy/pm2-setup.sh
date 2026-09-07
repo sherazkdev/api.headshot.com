@@ -13,6 +13,8 @@ fi
 
 mkdir -p logs uploads generated
 
+bash deploy/check-env.sh
+
 if [[ ! -f dist/server.js ]]; then
   npm run build:api
 fi

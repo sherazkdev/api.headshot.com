@@ -14,7 +14,9 @@ function loadDotEnv() {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (process.env[key] === undefined) process.env[key] = value;
+    if (process.env[key] === undefined || process.env[key] === "") {
+      process.env[key] = value;
+    }
   }
 }
 
@@ -25,7 +27,12 @@ const envSchema = z.object({
   ADMIN_ORIGIN: z.string().default("http://localhost:3001"),
   /** Public URL clients use (nginx :3016). Example: http://203.0.113.10:3016 */
   PUBLIC_BASE_URL: z.string().optional().default(""),
-  MONGODB_URI: z.string().min(1),
+  MONGODB_URI: z
+    .string()
+    .min(1)
+    .refine((v) => v.startsWith("mongodb://") || v.startsWith("mongodb+srv://"), {
+      message: 'Must start with "mongodb://" or "mongodb+srv://"',
+    }),
   ADMIN_EMAIL: z.string().email(),
   ADMIN_PASSWORD: z.string().min(8),
   JWT_SECRET: z.string().min(16),
