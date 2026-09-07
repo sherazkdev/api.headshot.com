@@ -1,0 +1,49 @@
+{
+  "name": "headshot-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headshot AI backend — Fastify API + Next.js admin",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "admin"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "dev:admin": "npm run dev --workspace=admin",
+    "build": "tsc -p tsconfig.json --noEmit && npm run build --workspace=admin",
+    "build:api": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "seed": "tsx src/scripts/seed.ts",
+    "seed:demo": "tsx src/scripts/seed-demo.ts",
+    "test": "tsx src/scripts/verify-api.ts",
+    "verify": "tsx src/scripts/verify-api.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.0.1",
+    "@fastify/helmet": "^13.0.1",
+    "@fastify/jwt": "^9.1.0",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
+    "@fastify/under-pressure": "^9.0.3",
+    "bcryptjs": "^3.0.2",
+    "fastify": "^5.4.0",
+    "firebase-admin": "^13.4.0",
+    "lru-cache": "^11.1.0",
+    "mongoose": "^8.18.0",
+    "pino": "^9.9.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.18.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

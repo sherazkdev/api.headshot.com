@@ -1,0 +1,30 @@
+"use client";
+
+import { useId } from "react";
+
+export function HeadshotMark({ className = "h-8 w-8", title = "Headshot AI" }: { className?: string; title?: string }) {
+  const raw = useId().replace(/:/g, "");
+  const g = `${raw}-g`;
+  const s = `${raw}-s`;
+  return (
+    <svg className={className} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={title}>
+      <title>{title}</title>
+      <rect width="32" height="32" rx="9" fill={`url(#${g})`} />
+      <rect x="5.5" y="7" width="21" height="18" rx="5" fill="white" fillOpacity="0.1" />
+      <rect x="5.5" y="7" width="21" height="18" rx="5" stroke="white" strokeOpacity="0.35" />
+      <circle cx="16" cy="13.4" r="3.4" fill="white" />
+      <path d="M9.2 22.7c.7-3.2 3.2-4.9 6.8-4.9s6.1 1.7 6.8 4.9c.1.45-.27.8-.73.8H9.93c-.46 0-.83-.35-.73-.8Z" fill="white" />
+      <circle cx="23.4" cy="10.1" r="1.55" fill={`url(#${s})`} />
+      <defs>
+        <linearGradient id={g} x1="2" y1="0" x2="30" y2="32" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#2563EB" />
+        </linearGradient>
+        <linearGradient id={s} x1="22" y1="8.5" x2="25" y2="12" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#FDE68A" />
+          <stop offset="1" stopColor="#F59E0B" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
