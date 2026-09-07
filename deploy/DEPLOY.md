@@ -4,6 +4,75 @@ Ek bar setup, phir sirf `git pull` + `bash deploy/deploy.sh`.
 
 ---
 
+## sudo kya hai?
+
+**sudo** = "super user do" — matlab **admin/root power** ek command ke liye.
+
+| Bina sudo | sudo ke sath |
+|-----------|--------------|
+| `pm2 start` | `sudo apt install nginx` |
+| `git pull` | `sudo cp file /etc/nginx/...` |
+| `nano .env` | `sudo certbot ...` (SSL) |
+| `nginx -s reload` (agar tumhara user allow kare) | `sudo systemctl reload nginx` |
+
+**Tum PM2 bina sudo chala sakte ho.**  
+**Lekin** nginx ki system files (`/etc/nginx/sites-enabled/`) aur SSL certificate **usually sudo chahiye** — ye Linux ka rule hai, hamari choice nahi.
+
+Pehle tumne kaha tha "sudo use nahi karte" — is liye humne `include` method di thi.  
+Agar tum **sites-enabled** use karte ho (zyada log aise karte hain), neeche **Method B** dekho.
+
+---
+
+## Nginx config — 2 tareeqe
+
+### Method A — `include` (bina sudo, custom nginx)
+
+Agar tumhari nginx `~/nginx/nginx.conf` jaisi jagah hai:
+
+```bash
+bash deploy/nginx/render-config.sh
+```
+
+```nginx
+include /home/YOUR_USER/headshot-api/deploy/nginx/headshot-api.conf;
+```
+
+```bash
+nginx -t && nginx -s reload
+```
+
+### Method B — `sites-enabled` (standard Ubuntu/VPS) ✅ recommended
+
+Ye wahi hai jo zyada VPS par hota hai:
+
+```
+/etc/nginx/sites-available/headshot-api   ← asli file
+/etc/nginx/sites-enabled/headshot-api     ← symlink (enable)
+```
+
+**Ek command (sudo sirf nginx folder ke liye):**
+
+```bash
+cd ~/headshot-api
+bash deploy/nginx/install-sites-enabled.sh
+```
+
+Ye automatically:
+1. Config render karega
+2. `sites-available/headshot-api` mein copy
+3. `sites-enabled` mein symlink
+4. `nginx -t` + reload
+
+**SSL ke liye:**
+
+```bash
+DOMAIN=api.yourdomain.com bash deploy/nginx/install-ssl-sites-enabled.sh
+sudo certbot certonly --webroot -w ~/headshot-api/logs/certbot -d api.yourdomain.com
+sudo systemctl reload nginx
+```
+
+---
+
 ## 0) Requirements
 
 | Cheez | Version |
@@ -100,24 +169,11 @@ API internally `127.0.0.1:3000` par chalegi. Bahar se nginx expose karega.
 
 ---
 
-## 4) Nginx — bina SSL (port 3016)
+## 4) Nginx — sites-enabled (recommended)
 
 ```bash
 cd ~/headshot-api
-bash deploy/nginx/render-config.sh
-bash deploy/nginx/check-port-3016.sh
-```
-
-Apni nginx config mein add karo:
-
-```nginx
-include /home/YOUR_USER/headshot-api/deploy/nginx/headshot-api.conf;
-```
-
-Reload:
-
-```bash
-nginx -t && nginx -s reload
+bash deploy/nginx/install-sites-enabled.sh
 ```
 
 Test:
@@ -125,6 +181,16 @@ Test:
 ```bash
 curl http://127.0.0.1:3016/v1/health
 curl http://YOUR_VPS_IP:3016/v1/health
+```
+
+### Ya manually (samajhne ke liye)
+
+```bash
+bash deploy/nginx/render-config.sh
+sudo cp deploy/nginx/headshot-api.conf /etc/nginx/sites-available/headshot-api
+sudo ln -sf /etc/nginx/sites-available/headshot-api /etc/nginx/sites-enabled/headshot-api
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 Mobile app URL: `http://YOUR_VPS_IP:3016/v1`
@@ -141,23 +207,11 @@ Domain A record point karo VPS IP par:
 api.yourdomain.com  →  YOUR_VPS_IP
 ```
 
-### Step B — SSL nginx config render
+### Step B — SSL sites-enabled install
 
 ```bash
 cd ~/headshot-api
-DOMAIN=api.yourdomain.com bash deploy/nginx/render-ssl-config.sh
-```
-
-Nginx mein include:
-
-```nginx
-include /home/YOUR_USER/headshot-api/deploy/nginx/headshot-api-ssl.conf;
-```
-
-Reload (pehle HTTP chalega, SSL abhi nahi):
-
-```bash
-nginx -t && nginx -s reload
+DOMAIN=api.yourdomain.com bash deploy/nginx/install-ssl-sites-enabled.sh
 ```
 
 ### Step C — Let's Encrypt certificate
