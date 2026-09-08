@@ -23,6 +23,16 @@ function loadEnvFile(envPath) {
 
 const envFromFile = loadEnvFile(path.join(appDir, ".env"));
 
+// Never let PM2 resurrect a stale PORT=3000 when .env says 3016
+if (!envFromFile.PORT) {
+  envFromFile.PORT = "3016";
+}
+if (!envFromFile.BIND_HOST) {
+  envFromFile.BIND_HOST = "127.0.0.1";
+}
+
+console.log("[headshot-api pm2] PORT=%s BIND_HOST=%s", envFromFile.PORT, envFromFile.BIND_HOST);
+
 module.exports = {
   apps: [
     {

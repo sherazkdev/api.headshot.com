@@ -4,6 +4,16 @@ import { z } from "zod";
 function loadDotEnv() {
   const path = ".env";
   if (!existsSync(path)) return;
+  /** PM2 caches old PORT — .env must win for these keys */
+  const alwaysFromFile = new Set([
+    "PORT",
+    "BIND_HOST",
+    "NODE_ENV",
+    "MONGODB_URI",
+    "PUBLIC_BASE_URL",
+    "ADMIN_ORIGIN",
+    "API_BASE_PATH",
+  ]);
   for (const raw of readFileSync(path, "utf8").split("\n")) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
@@ -14,7 +24,7 @@ function loadDotEnv() {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1);
     }
-    if (process.env[key] === undefined || process.env[key] === "") {
+    if (alwaysFromFile.has(key) || process.env[key] === undefined || process.env[key] === "") {
       process.env[key] = value;
     }
   }
