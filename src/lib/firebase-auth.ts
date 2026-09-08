@@ -2,6 +2,11 @@ import type { AppConfig } from "../config/index.js";
 import { errors } from "./errors.js";
 
 type Decoded = { uid: string; email?: string; name?: string; email_verified?: boolean };
+type FirebaseAdmin = typeof import("firebase-admin") & { default?: typeof import("firebase-admin") };
+
+function adminSdk(mod: FirebaseAdmin): typeof import("firebase-admin") {
+  return mod.default ?? mod;
+}
 
 export class FirebaseAuth {
   private appReady = false;
@@ -28,7 +33,7 @@ export class FirebaseAuth {
     if (!this.config.FIREBASE_PROJECT_ID && !this.config.GOOGLE_APPLICATION_CREDENTIALS) {
       return null;
     }
-    const admin = await import("firebase-admin");
+    const admin = adminSdk(await import("firebase-admin"));
     if (!this.appReady && admin.apps.length === 0) {
       const privateKey = this.config.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n");
       if (this.config.GOOGLE_APPLICATION_CREDENTIALS) {
