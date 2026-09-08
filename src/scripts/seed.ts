@@ -24,7 +24,7 @@ async function seed() {
   console.log("  password: value of ADMIN_PASSWORD in .env");
   console.log("");
   console.log("API start:");
-  console.log("  npm run index   # MongoDB indexes (pehli deploy par)");
+  console.log("  npm run index   # prints Firestore collection names");
   console.log("  pm2 start deploy/ecosystem.config.cjs");
   await disconnectDb();
 }

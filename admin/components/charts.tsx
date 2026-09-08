@@ -176,6 +176,6 @@ export function DonutCard({ data }: { data: Array<{ name: string; value: number;
   );
 }
 
-export function EmptyChart({ label = "No data in MongoDB yet." }: { label?: string }) {
+export function EmptyChart({ label = "No data in Firestore yet." }: { label?: string }) {
   return <div className="flex h-64 items-center justify-center text-sm text-subtle">{label}</div>;
 }

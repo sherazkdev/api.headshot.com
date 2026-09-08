@@ -147,7 +147,7 @@ async function main() {
     projects: await ProjectModel.countDocuments({ uid: { $regex: `^${DEMO_PREFIX}` } }),
   };
 
-  console.log("Demo data seeded into MongoDB (headshot_ai):");
+  console.log("Demo data seeded into Firestore:");
   console.log(counts);
   console.log("Refresh admin dashboard: http://localhost:3001");
 

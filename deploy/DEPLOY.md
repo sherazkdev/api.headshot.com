@@ -78,7 +78,7 @@ sudo systemctl reload nginx
 | Cheez | Version |
 |-------|---------|
 | Node.js | 20+ |
-| MongoDB | running (local ya Atlas) |
+| Firebase project | Firestore + Auth + Storage (same project as the app) |
 | PM2 | `npm i -g pm2` |
 | Nginx | tumhari existing install |
 | Domain (SSL ke liye) | DNS → VPS IP |
@@ -117,14 +117,13 @@ PUBLIC_BASE_URL=http://YOUR_VPS_IP:3016
 # Domain + SSL ke baad
 # PUBLIC_BASE_URL=https://api.yourdomain.com
 
-MONGODB_URI=mongodb://127.0.0.1:27017/headshot_ai
+FIREBASE_PROJECT_ID=headshot-app-f2ba9
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_STORAGE_BUCKET=headshot-app-f2ba9.appspot.com
 ADMIN_EMAIL=admin@headshotapi.com
 ADMIN_PASSWORD=strong-password-here
 JWT_SECRET=minimum-32-char-random-secret
-
-FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 
 GEMINI_API_KEY=...
 GOOGLE_PLAY_VERIFY_ENABLED=false
@@ -137,10 +136,10 @@ GOOGLE_PLAY_VERIFY_ENABLED=false
 ```bash
 cd /var/www/headshot-api
 npm run seed    # remote config + API key
-npm run index   # MongoDB indexes (users, jobs, credits, etc.)
+npm run index   # prints Firestore collection names
 ```
 
-`npm run index` = MongoDB collections par saari indexes banata/sync karta hai (fast queries).
+`npm run index` Firestore collections list karta hai (users, jobs, credits, …). Indexes Console pe automatic / composite.
 
 Admin login `.env` se hota hai — `ADMIN_EMAIL` + `ADMIN_PASSWORD`.
 

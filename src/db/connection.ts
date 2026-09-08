@@ -1,17 +1,31 @@
-import mongoose from "mongoose";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import type { AppConfig } from "../config/index.js";
+import { firebaseApp } from "../lib/firebase-app.js";
 
-export async function connectDb(config: AppConfig): Promise<typeof mongoose> {
-  mongoose.set("strictQuery", true);
-  await mongoose.connect(config.MONGODB_URI, {
-    maxPoolSize: 100,
-    minPoolSize: 10,
-    serverSelectionTimeoutMS: 8_000,
-    maxIdleTimeMS: 30_000,
-  });
-  return mongoose;
+let db: Firestore | null = null;
+let connectedConfig: AppConfig | null = null;
+
+export async function connectDb(config: AppConfig): Promise<Firestore> {
+  connectedConfig = config;
+  firebaseApp(config);
+  db = getFirestore();
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    /* settings already applied on this app */
+  }
+  return db;
 }
 
 export async function disconnectDb(): Promise<void> {
-  await mongoose.disconnect();
+  db = null;
+  connectedConfig = null;
+}
+
+export function firestore(): Firestore {
+  if (!db) {
+    if (!connectedConfig) throw new Error("Firestore is not connected — call connectDb first");
+    db = getFirestore();
+  }
+  return db;
 }

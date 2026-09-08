@@ -9,7 +9,6 @@ function loadDotEnv() {
     "PORT",
     "BIND_HOST",
     "NODE_ENV",
-    "MONGODB_URI",
     "PUBLIC_BASE_URL",
     "ADMIN_ORIGIN",
     "API_BASE_PATH",
@@ -39,18 +38,15 @@ const envSchema = z.object({
   ADMIN_ORIGIN: z.string().default("http://localhost:3001"),
   /** Public HTTPS URL — e.g. https://aiheadshotapi.com */
   PUBLIC_BASE_URL: z.string().optional().default(""),
-  MONGODB_URI: z
-    .string()
-    .min(1)
-    .refine((v) => v.startsWith("mongodb://") || v.startsWith("mongodb+srv://"), {
-      message: 'Must start with "mongodb://" or "mongodb+srv://"',
-    }),
+  /** Unused — data lives in Firestore. Kept so old .env files still boot. */
+  MONGODB_URI: z.string().optional().default(""),
   ADMIN_EMAIL: z.string().email(),
   ADMIN_PASSWORD: z.string().min(8),
   JWT_SECRET: z.string().min(16),
   FIREBASE_PROJECT_ID: z.string().optional().default(""),
   FIREBASE_CLIENT_EMAIL: z.string().optional().default(""),
   FIREBASE_PRIVATE_KEY: z.string().optional().default(""),
+  FIREBASE_STORAGE_BUCKET: z.string().optional().default(""),
   GOOGLE_APPLICATION_CREDENTIALS: z.string().optional().default(""),
   GEMINI_API_KEY: z.string().optional().default(""),
   GEMINI_IMAGE_MODEL: z.string().default("gemini-3.1-flash-image"),

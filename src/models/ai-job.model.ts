@@ -1,5 +1,3 @@
-import mongoose, { Schema } from "mongoose";
-
 export const JOB_TYPES = [
   "headshot_generation",
   "branding_analyze",
@@ -27,28 +25,3 @@ export type AiJobDoc = {
   createdAt: Date;
   updatedAt: Date;
 };
-
-const schema = new Schema<AiJobDoc>(
-  {
-    jobId: { type: String, required: true, unique: true },
-    uid: { type: String, required: true, index: true },
-    jobType: { type: String, enum: JOB_TYPES, required: true, index: true },
-    provider: { type: String, enum: ["gemini", "bfl"], required: true },
-    model: { type: String, required: true },
-    status: { type: String, enum: JOB_STATUSES, default: "queued", index: true },
-    payload: { type: Schema.Types.Mixed, default: {} },
-    result: { type: Schema.Types.Mixed, default: {} },
-    credits: { type: Number, required: true },
-    fromPassCredits: { type: Number, default: 0 },
-    fromBonusCredits: { type: Number, default: 0 },
-    error: { type: String, default: null },
-    queueMs: Number,
-    durationMs: Number,
-  },
-  { timestamps: true },
-);
-
-schema.index({ status: 1, createdAt: -1 });
-schema.index({ uid: 1, createdAt: -1 });
-
-export const AiJobModel = mongoose.model<AiJobDoc>("AiJob", schema);

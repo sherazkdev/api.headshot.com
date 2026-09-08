@@ -38,6 +38,14 @@ export class UsersService {
       loginProvider: input.loginProvider ?? "email",
       emailVerified: input.emailVerified ?? false,
       lastLoginAt: new Date(),
+      credits: 0,
+      passCredits: 0,
+      adRewardClaimed: false,
+      isPremium: false,
+      premiumStatus: "free",
+      accountStatus: "active",
+      welcomeBonusGranted: false,
+      __v: 0,
     });
     return this.public(created);
   }

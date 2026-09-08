@@ -1,7 +1,6 @@
 [Unit]
 Description=Headshot API (Fastify) — OPTIONAL, only if you use systemd with root
-After=network.target mongod.service
-Wants=mongod.service
+After=network.target
 
 [Service]
 Type=simple

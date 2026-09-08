@@ -36,16 +36,12 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   fi
 done < "$ENV_FILE"
 
-URI="$(grep -E '^MONGODB_URI=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs || true)"
-if [[ -z "$URI" ]]; then
-  echo "FAIL: MONGODB_URI missing or empty"
-  bad=1
-elif [[ "$URI" != mongodb://* && "$URI" != mongodb+srv://* ]]; then
-  echo "FAIL: MONGODB_URI must start with mongodb:// or mongodb+srv://"
-  echo "  Got: $URI"
+PROJECT="$(grep -E '^FIREBASE_PROJECT_ID=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs || true)"
+if [[ -z "$PROJECT" ]]; then
+  echo "FAIL: FIREBASE_PROJECT_ID missing or empty"
   bad=1
 else
-  echo "OK: MONGODB_URI"
+  echo "OK: FIREBASE_PROJECT_ID=$PROJECT"
 fi
 
 NODE_ENV="$(grep -E '^NODE_ENV=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'" | xargs || true)"

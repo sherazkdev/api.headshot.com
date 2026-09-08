@@ -1,11 +1,25 @@
 import type { UserDoc } from "../models/index.js";
 
+function asDate(value: unknown): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === "object" && "toDate" in (value as object) && typeof (value as { toDate: () => Date }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  if (typeof value === "number" || typeof value === "string") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
 export function passIsActive(user: Pick<UserDoc, "passExpiresAt" | "passCredits">): boolean {
-  return Boolean(user.passExpiresAt && user.passExpiresAt.getTime() > Date.now() && user.passCredits > 0);
+  const exp = asDate(user.passExpiresAt);
+  return Boolean(exp && exp.getTime() > Date.now() && Number(user.passCredits ?? 0) > 0);
 }
 
 export function spendableCredits(user: Pick<UserDoc, "credits" | "passCredits" | "passExpiresAt">): number {
-  return (passIsActive(user) ? user.passCredits : 0) + user.credits;
+  return (passIsActive(user) ? Number(user.passCredits ?? 0) : 0) + Number(user.credits ?? 0);
 }
 
 export function usesLeft(user: Pick<UserDoc, "credits" | "passCredits" | "passExpiresAt">): number {
@@ -14,28 +28,31 @@ export function usesLeft(user: Pick<UserDoc, "credits" | "passCredits" | "passEx
 
 export function walletView(user: UserDoc) {
   const active = passIsActive(user);
-  if (!active && (user.passCredits > 0 || user.isPremium)) {
+  const credits = Number(user.credits ?? 0);
+  const passCredits = Number(user.passCredits ?? 0);
+  const exp = asDate(user.passExpiresAt);
+  if (!active && (passCredits > 0 || user.isPremium)) {
     return {
-      credits: user.credits,
+      credits,
       passCredits: 0,
       passExpiresAt: null,
       activePassId: null,
       isPremium: false,
       premiumStatus: user.premiumStatus === "cancelled" ? "cancelled" : "expired",
-      spendableCredits: user.credits,
-      usesLeft: Math.floor(user.credits / 50),
-      adRewardClaimed: user.adRewardClaimed,
+      spendableCredits: credits,
+      usesLeft: Math.floor(credits / 50),
+      adRewardClaimed: Boolean(user.adRewardClaimed),
     };
   }
   return {
-    credits: user.credits,
-    passCredits: user.passCredits,
-    passExpiresAt: user.passExpiresAt?.toISOString() ?? null,
+    credits,
+    passCredits,
+    passExpiresAt: exp?.toISOString() ?? null,
     activePassId: user.activePassId ?? null,
-    isPremium: user.isPremium,
+    isPremium: Boolean(user.isPremium),
     premiumStatus: user.premiumStatus,
     spendableCredits: spendableCredits(user),
     usesLeft: usesLeft(user),
-    adRewardClaimed: user.adRewardClaimed,
+    adRewardClaimed: Boolean(user.adRewardClaimed),
   };
 }

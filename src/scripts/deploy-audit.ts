@@ -364,8 +364,8 @@ async function main() {
   }
 
   console.log("\n=== PRODUCTION GAPS (code, not HTTP 200) ===");
-  console.log(`FCM push send: NO — campaign only writes Mongo notifications (delivery=queued), firebase-admin.messaging() never called`);
-  console.log(`STORAGE_DRIVER/GCS/S3: UNUSED — LocalStorage only (uploads/ + generated/ on disk)`);
+  console.log(`FCM push send: NO — campaign only writes Firestore notifications (delivery=queued), firebase-admin.messaging() never called`);
+  console.log(`Photos: Firebase Storage when bucket works, else local uploads/ + generated/`);
   console.log(`REDIS_URL: UNUSED — MemoryQueue + MemoryCache`);
   console.log(`App Store IAP verify: NO — iOS verify rejected / webhook stored without Apple crypto`);
   console.log(`AdMob SSV crypto: NO — prod only checks signature/key_id presence`);

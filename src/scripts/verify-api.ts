@@ -26,7 +26,6 @@ function multipartPhoto(purpose = "headshot") {
 
 async function main() {
   process.env.NODE_ENV = process.env.NODE_ENV === "production" ? "development" : process.env.NODE_ENV || "development";
-  process.env.MONGODB_URI = process.env.VERIFY_MONGODB_URI || "mongodb://127.0.0.1:27017/headshot_ai_verify";
 
   const config = loadConfig();
   await connectDb(config);

@@ -40,7 +40,7 @@ export default function RemoteConfigPage() {
 
   return (
     <div>
-      <PageHeader title="Remote Config / Settings" subtitle="Feature flags stored in MongoDB. Publish writes the current values." actions={<Button onClick={save} disabled={busy}>{busy ? "Publishing…" : "Publish changes"}</Button>} />
+      <PageHeader title="Remote Config / Settings" subtitle="Feature flags stored in Firestore. Publish writes the current values." actions={<Button onClick={save} disabled={busy}>{busy ? "Publishing…" : "Publish changes"}</Button>} />
       {status ? <Banner className="mb-4">{status}</Banner> : null}
       <Card className="overflow-hidden">
         <div className="scrollable">

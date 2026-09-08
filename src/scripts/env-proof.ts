@@ -38,13 +38,12 @@ async function main() {
     flag("PORT", config.PORT, "boot"),
     flag("API_BASE_PATH", config.API_BASE_PATH, "boot"),
     flag("ADMIN_ORIGIN", config.ADMIN_ORIGIN, "CORS"),
-    flag("MONGODB_URI", config.MONGODB_URI, "DB"),
     flag("ADMIN_EMAIL", config.ADMIN_EMAIL, "admin login"),
     flag("ADMIN_PASSWORD", config.ADMIN_PASSWORD, "admin login"),
     flag("JWT_SECRET", config.JWT_SECRET, "JWT sign/verify"),
-    flag("FIREBASE_PROJECT_ID", config.FIREBASE_PROJECT_ID, "mobile auth"),
-    flag("FIREBASE_CLIENT_EMAIL", config.FIREBASE_CLIENT_EMAIL, "mobile auth"),
-    flag("FIREBASE_PRIVATE_KEY", config.FIREBASE_PRIVATE_KEY, "mobile auth"),
+    flag("FIREBASE_PROJECT_ID", config.FIREBASE_PROJECT_ID, "Firestore + Auth"),
+    flag("FIREBASE_CLIENT_EMAIL", config.FIREBASE_CLIENT_EMAIL, "Firestore + Auth"),
+    flag("FIREBASE_PRIVATE_KEY", config.FIREBASE_PRIVATE_KEY, "Firestore + Auth"),
     flag("GOOGLE_APPLICATION_CREDENTIALS", config.GOOGLE_APPLICATION_CREDENTIALS, "mobile auth"),
     flag("GEMINI_API_KEY", config.GEMINI_API_KEY, "real headshots/branding"),
     flag("GEMINI_IMAGE_MODEL", config.GEMINI_IMAGE_MODEL, "AI model id"),
@@ -55,7 +54,8 @@ async function main() {
     flag("GOOGLE_PLAY_VERIFY_ENABLED", config.GOOGLE_PLAY_VERIFY_ENABLED, "false=skip Play match, true=Console match"),
     flag("GOOGLE_PLAY_PACKAGE_NAME", config.GOOGLE_PLAY_PACKAGE_NAME, "Play verify when enabled"),
     flag("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, "Play verify when enabled"),
-    flag("STORAGE_DRIVER", config.STORAGE_DRIVER, "UNUSED in code (always LocalStorage)"),
+    flag("FIREBASE_STORAGE_BUCKET", config.FIREBASE_STORAGE_BUCKET, "Firebase Storage signed URLs"),
+    flag("STORAGE_DRIVER", config.STORAGE_DRIVER, "legacy; cloud upload tries Firebase Storage first"),
     flag("GCS_BUCKET", config.GCS_BUCKET, "UNUSED"),
     flag("AWS_S3_BUCKET", config.AWS_S3_BUCKET, "UNUSED"),
     flag("AWS_ACCESS_KEY_ID", config.AWS_ACCESS_KEY_ID, "UNUSED"),
@@ -83,7 +83,7 @@ async function main() {
 
   try {
     const health = await req(app, { method: "GET", url: "/v1/health" });
-    check("MONGODB + API boot (GET /health)", health.status === 200 && health.body.success === true, `status ${health.status}`);
+    check("Firestore + API boot (GET /health)", health.status === 200 && health.body.success === true, `status ${health.status}`);
 
     const live = await fetch("http://127.0.0.1:3000/v1/health");
     const liveBody = await live.json();
@@ -107,7 +107,7 @@ async function main() {
 
     const adminAuth = { authorization: `Bearer ${login.body.data?.token}` };
     const overview = await req(app, { method: "GET", url: "/v1/admin/overview", headers: adminAuth });
-    check("JWT_SECRET verifies admin token + Mongo overview", overview.status === 200, `users=${overview.body.data?.totalUsers}`);
+    check("JWT_SECRET verifies admin token + Firestore overview", overview.status === 200, `users=${overview.body.data?.totalUsers}`);
 
     const fakeFb = await req(app, { method: "GET", url: "/v1/credits", headers: { authorization: "Bearer fake.firebase.token" } });
     check(

@@ -160,6 +160,7 @@ export class CreditsService {
         productId: "rewarded_ad",
         creditsAdded: CREDIT_GRANTS.rewarded_ad,
         amount: 0,
+        currency: "USD",
         platform: "rewarded_ad",
         status: "completed",
       });
@@ -172,7 +173,8 @@ export class CreditsService {
 
   private async debitOnce(uid: string, amount: number, reason: CreditReason, referenceId?: string): Promise<ConsumeResult> {
     const user = await this.expirePassIfNeeded(await this.requireUser(uid));
-    const passActive = Boolean(user.passExpiresAt && user.passExpiresAt.getTime() > Date.now());
+    const expMs = user.passExpiresAt ? new Date(user.passExpiresAt as Date).getTime() : 0;
+    const passActive = Number.isFinite(expMs) && expMs > Date.now();
     const available = spendableCredits(user);
     if (available < amount) throw errors.insufficientCredits(amount, available);
 
@@ -226,7 +228,9 @@ export class CreditsService {
   }
 
   async expirePassIfNeeded(user: UserRecord) {
-    if (user.passExpiresAt && user.passExpiresAt.getTime() <= Date.now()) {
+    const exp = user.passExpiresAt;
+    const expired = Boolean(exp && new Date(exp as Date).getTime() <= Date.now());
+    if (expired) {
       if (user.passCredits || user.isPremium || user.activePassId) {
         user.passCredits = 0;
         user.activePassId = null;
