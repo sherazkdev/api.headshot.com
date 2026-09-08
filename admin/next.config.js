@@ -1,8 +1,15 @@
 /** @type {import('next').NextConfig} */
+const apiPort = process.env.API_PORT || process.env.PORT || "3016";
+
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    return [{ source: "/api-proxy/:path*", destination: "http://127.0.0.1:3000/v1/:path*" }];
+    return [
+      {
+        source: "/api-proxy/:path*",
+        destination: `http://127.0.0.1:${apiPort}/v1/:path*`,
+      },
+    ];
   },
 };
 
