@@ -9,7 +9,7 @@ import underPressure from "@fastify/under-pressure";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import type { AppConfig } from "./config/index.js";
-import { openApiDocument } from "./docs/openapi.js";
+import { buildOpenApiDocument } from "./docs/openapi.js";
 import { AppError, errorEnvelope, rewriteFastifyErrorPayload, toClientError } from "./lib/errors.js";
 import { MemoryCache } from "./cache/index.js";
 import { MemoryQueue } from "./queue/index.js";
@@ -81,7 +81,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   });
   await app.register(swagger, {
     mode: "static",
-    specification: { document: openApiDocument as never },
+    specification: { document: buildOpenApiDocument(config) as never },
   });
   await app.register(swaggerUi, {
     routePrefix: "/docs",

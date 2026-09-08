@@ -1,3 +1,5 @@
+import type { AppConfig } from "../config/index.js";
+
 const envelope = {
   type: "object",
   properties: {
@@ -31,7 +33,7 @@ export const openApiDocument = {
     description:
       "Fastify + MongoDB backend. Admin dashboard at http://localhost:3001 proxies `/api-proxy/*` → `/v1/*`.\n\nAuth: `Authorization: Bearer <admin JWT | Firebase | dev user JWT>` or `x-api-key`.",
   },
-  servers: [{ url: "http://127.0.0.1:3000/v1", description: "Local" }],
+  servers: [{ url: "/v1", description: "Same host (relative)" }],
   tags: [
     { name: "Health" },
     { name: "Auth" },
@@ -201,3 +203,16 @@ export const openApiDocument = {
     "/admin/api-keys/{id}/revoke": { post: op("Revoke key", { tags: ["API Keys"], security: admin, parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }] }) },
   },
 };
+
+/** Swagger "Try it out" uses PUBLIC_BASE_URL in production, not 127.0.0.1 */
+export function buildOpenApiDocument(config: AppConfig) {
+  const basePath = config.API_BASE_PATH.startsWith("/") ? config.API_BASE_PATH : `/${config.API_BASE_PATH}`;
+  const publicUrl = config.PUBLIC_BASE_URL?.replace(/\/$/, "");
+  const servers = publicUrl
+    ? [{ url: `${publicUrl}${basePath}`, description: "Production" }]
+    : [
+        { url: `${basePath}`, description: "Relative" },
+        { url: `http://127.0.0.1:${config.PORT}${basePath}`, description: "Local" },
+      ];
+  return { ...openApiDocument, servers };
+}
