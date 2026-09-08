@@ -11,7 +11,7 @@ import { clsx } from "@/components/clsx";
 export default function LoginPage() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
-  const [email, setEmail] = useState("admin@headshotapi.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
@@ -93,7 +93,14 @@ export default function LoginPage() {
           <label className="mt-8 block text-sm font-medium">Email address</label>
           <div className="mt-1.5 flex h-11 items-center gap-2 rounded-input border border-line bg-card px-3">
             <Mail size={16} className="text-faint" />
-            <input className="w-full bg-transparent text-sm outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input
+              type="email"
+              autoComplete="off"
+              className="w-full bg-transparent text-sm outline-none"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <label className="mt-4 block text-sm font-medium">Password</label>
           <div className="mt-1.5 flex h-11 items-center gap-2 rounded-input border border-line bg-card px-3">
