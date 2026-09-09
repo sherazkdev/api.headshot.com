@@ -5,9 +5,8 @@ export const runtime = "nodejs";
 
 const API_PORT = process.env.API_PORT || "3016";
 
-async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> | { path: string[] } }) {
-  const raw = await Promise.resolve(ctx.params);
-  const segments = Array.isArray(raw.path) ? raw.path : [];
+async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+  const { path: segments } = await ctx.params;
   const target = `http://127.0.0.1:${API_PORT}/v1/${segments.join("/")}${req.nextUrl.search}`;
 
   const headers = new Headers();
