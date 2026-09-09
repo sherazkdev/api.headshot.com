@@ -204,7 +204,7 @@ async function main() {
     await new Promise((r) => setTimeout(r, 1500));
     const improved = await req("POST", "/branding/improve", { token: userToken, json: { uploadId: brandingId } });
     const improvementId = String(improved.body.data?.improvementId ?? "");
-    check("POST /branding/improve", improved.status === 200 && improved.body.data?.status === "processing", improved.status, `${improved.ms}ms`);
+    check("POST /branding/improve", improved.status === 200 && Boolean(improved.body.data?.imageUrl), improved.status, `${improved.ms}ms`);
 
     let improveStatus = "missing";
     let improveImage: unknown;

@@ -29,6 +29,14 @@ function neq(actual: unknown, expected: unknown): boolean {
   return actual === expected;
 }
 
+function stripUndefined(input: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
 function isAlreadyExists(err: unknown): boolean {
   const e = err as { code?: number | string; message?: string };
   return e?.code === 6 || e?.code === "already-exists" || /ALREADY_EXISTS/i.test(String(e?.message ?? err));
@@ -64,6 +72,10 @@ function matches(doc: Record<string, unknown>, filter: Filter): boolean {
     }
     if (key === "__v") {
       if (Number(actual) !== Number(raw)) return false;
+      continue;
+    }
+    if (raw == null) {
+      if (actual != null) return false;
       continue;
     }
     if (actual !== raw) return false;
@@ -121,7 +133,7 @@ export class FsModel<T extends object> {
         const { _id, save, toObject, ...rest } = doc as FsDoc<T> & { save?: unknown; toObject?: unknown };
         await this.col()
           .doc(String(_id))
-          .set({ ...(rest as object), updatedAt: new Date() }, { merge: true });
+          .set(stripUndefined({ ...(rest as Record<string, unknown>), updatedAt: new Date() }), { merge: true });
         return doc;
       },
     });
@@ -255,7 +267,7 @@ export class FsModel<T extends object> {
     if (this.idField && !data[this.idField]) data[this.idField] = id;
     const ref = this.col().doc(id);
     try {
-      await ref.create(data);
+      await ref.create(stripUndefined(data));
     } catch (err) {
       if (isAlreadyExists(err)) throw new DuplicateKeyError();
       throw err;

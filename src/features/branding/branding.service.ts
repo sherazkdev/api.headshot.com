@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { CREDIT_COSTS } from "../../config/credits.js";
 import { errors } from "../../lib/errors.js";
+import { asDate } from "../../lib/wallet.js";
 import { GeminiClient } from "../../lib/ai-providers.js";
 import { LocalStorage } from "../../lib/storage.js";
 import { rejectIfDuplicate } from "../../lib/idempotency.js";
@@ -69,8 +70,27 @@ export class BrandingService {
       credits: CREDIT_COSTS.branding_improve,
       payload: { uploadId, enhancementPrompt: prompt },
     });
-    this.queue.enqueue("branding.improve", { jobId });
-    return { improvementId: jobId, status: "processing" as const, creditsDeducted: 0, enhancementPrompt: prompt };
+    await this.processImprove({ jobId });
+    const job = await AiJobModel.findOne({ jobId });
+    if (!job || job.status === "failed") throw errors.server(job?.error ?? "Branding improve failed");
+    const result = (job.result ?? {}) as Record<string, unknown>;
+    const imageUrl = typeof result.imageUrl === "string" ? result.imageUrl : null;
+    if (!imageUrl) throw errors.server("Branding improve did not return an image URL");
+    return {
+      improvementId: jobId,
+      analysisId: jobId,
+      status: "completed" as const,
+      imageUrl,
+      overallScore: result.overallScore ?? null,
+      overallLabel: result.overallLabel ?? null,
+      percentileLabel: result.percentileLabel ?? null,
+      metrics: result.metrics ?? [],
+      improvementTips: result.improvementTips ?? [],
+      strengths: result.strengths ?? [],
+      enhancementPrompt: prompt,
+      creditsDeducted: CREDIT_COSTS.branding_improve,
+      remainingSpendable: result.remainingSpendable ?? null,
+    };
   }
 
   private async processImprove(payload: { jobId: string }) {
@@ -86,7 +106,12 @@ export class BrandingService {
       const imageB64 = await this.gemini.generateImage(prompt, bytes.toString("base64"), upload.mimeType);
       const out = await this.storage.saveGenerated(job.uid, `branding_${job.jobId}`, Buffer.from(imageB64, "base64"));
       const imageUrl = this.storage.url(out, this.config);
-      const vision = (await this.gemini.visionJson(ANALYZE_PROMPT, [{ mimeType: "image/png", data: imageB64 }])) as Record<string, unknown>;
+      let vision: Record<string, unknown> = {};
+      try {
+        vision = (await this.gemini.visionJson(ANALYZE_PROMPT, [{ mimeType: "image/png", data: imageB64 }])) as Record<string, unknown>;
+      } catch {
+        /* image still returned even if rescoring fails */
+      }
       const consumed = await this.credits.consume(job.uid, CREDIT_COSTS.branding_improve, "branding_improve", uploadId, `job:${job.jobId}`, {
         reuseIdempotency: true,
       });
@@ -127,7 +152,8 @@ export class BrandingService {
   private async loadUpload(uid: string, uploadId: string) {
     const upload = await UploadModel.findOne({ uploadId, uid });
     if (!upload) throw errors.notFound("Upload not found");
-    if (upload.expiresAt.getTime() <= Date.now()) throw errors.notFound("Upload expired");
+    const exp = asDate(upload.expiresAt);
+    if (!exp || exp.getTime() <= Date.now()) throw errors.notFound("Upload expired");
     return upload;
   }
 }

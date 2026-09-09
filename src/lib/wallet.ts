@@ -62,5 +62,9 @@ export function publicUser(user: UserDoc & { toObject?: () => Record<string, unk
   const obj = { ...raw } as Record<string, unknown>;
   delete obj.save;
   delete obj.toObject;
+  for (const [key, value] of Object.entries(obj)) {
+    if (value instanceof Date) obj[key] = Number.isNaN(value.getTime()) ? null : value.toISOString();
+    else if (value && typeof value === "object" && "toDate" in value) obj[key] = asDate(value)?.toISOString() ?? null;
+  }
   return { ...obj, ...walletView(user) };
 }

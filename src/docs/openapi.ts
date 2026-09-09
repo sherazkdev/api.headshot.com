@@ -284,6 +284,7 @@ export const openApiDocument = {
       post: op("Branding improve (100 credits + image)", {
         tags: ["Branding"],
         security: firebaseUser,
+        description: "Waits for the improved image, then returns imageUrl plus rescore metrics in the same response.",
         parameters: [idempotencyHeader],
         requestBody: json({
           type: "object",
@@ -299,6 +300,7 @@ export const openApiDocument = {
       post: op("Profile review", {
         tags: ["Reviews"],
         security: firebaseUser,
+        description: "Requires at least 2 upload IDs. Returns per-photo scores, bestIndex, overallScore, and improvementTips.",
         parameters: [idempotencyHeader],
         requestBody: json({
           type: "object",

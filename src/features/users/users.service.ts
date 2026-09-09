@@ -1,5 +1,6 @@
 import { UserModel } from "../../models/index.js";
 import { errors } from "../../lib/errors.js";
+import { isDuplicateKeyError } from "../../lib/mongo-dup.js";
 import { publicUser, walletView } from "../../lib/wallet.js";
 import { MemoryCache } from "../../cache/index.js";
 import { pageMeta } from "../../lib/zod.js";
@@ -19,35 +20,57 @@ export class UsersService {
     loginProvider?: "email" | "google" | "apple" | "facebook";
     emailVerified?: boolean;
   }) {
-    const existing = await UserModel.findOne({ uid: input.uid });
-    if (existing) {
-      if (existing.accountStatus === "deleted") throw errors.forbidden("Account deleted");
-      if (existing.accountStatus === "suspended") throw errors.forbidden("Account suspended");
-      existing.lastLoginAt = new Date();
-      if (input.email) existing.email = input.email;
-      if (input.name) existing.name = input.name;
-      await existing.save();
-      this.cache.del(`user:${input.uid}`);
-      return this.public(existing);
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const existing = await UserModel.findOne({ uid: input.uid });
+        if (existing) {
+          if (existing.accountStatus === "deleted") throw errors.forbidden("Account deleted");
+          if (existing.accountStatus === "suspended") throw errors.forbidden("Account suspended");
+          existing.lastLoginAt = new Date();
+          if (input.email) existing.email = input.email;
+          if (input.name) existing.name = input.name;
+          if (input.photoUrl) existing.photoUrl = input.photoUrl;
+          await existing.save();
+          this.cache.del(`user:${input.uid}`);
+          return this.public(existing);
+        }
+        try {
+          const created = await UserModel.create({
+            uid: input.uid,
+            email: input.email ?? "",
+            name: input.name ?? "",
+            ...(input.photoUrl ? { photoUrl: input.photoUrl } : {}),
+            loginProvider: input.loginProvider ?? "email",
+            emailVerified: input.emailVerified ?? false,
+            lastLoginAt: new Date(),
+            credits: 0,
+            passCredits: 0,
+            adRewardClaimed: false,
+            isPremium: false,
+            premiumStatus: "free",
+            accountStatus: "active",
+            welcomeBonusGranted: false,
+            __v: 0,
+          });
+          return this.public(created);
+        } catch (err) {
+          if (!isDuplicateKeyError(err)) throw err;
+          const raced = await UserModel.findOne({ uid: input.uid });
+          if (raced) return this.public(raced);
+          throw err;
+        }
+      } catch (err) {
+        lastError = err;
+        if (err && typeof err === "object" && "httpStatus" in err && Number((err as { httpStatus: number }).httpStatus) < 500) {
+          throw err;
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        if (attempt === 2 || !/UNAVAILABLE|ETIMEDOUT|ECONNRESET|DEADLINE/i.test(msg)) throw err;
+        await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+      }
     }
-    const created = await UserModel.create({
-      uid: input.uid,
-      email: input.email ?? "",
-      name: input.name ?? "",
-      photoUrl: input.photoUrl,
-      loginProvider: input.loginProvider ?? "email",
-      emailVerified: input.emailVerified ?? false,
-      lastLoginAt: new Date(),
-      credits: 0,
-      passCredits: 0,
-      adRewardClaimed: false,
-      isPremium: false,
-      premiumStatus: "free",
-      accountStatus: "active",
-      welcomeBonusGranted: false,
-      __v: 0,
-    });
-    return this.public(created);
+    throw lastError instanceof Error ? lastError : errors.server("Bootstrap failed");
   }
 
   async profile(uid: string) {

@@ -440,8 +440,13 @@ async function main() {
       headers: userAuth,
       payload: { uploadId: brandingId },
     });
-    const improvementId = (improved.body.data as { improvementId?: string } | undefined)?.improvementId;
-    check("POST /branding/improve queued", improved.status === 200 && Boolean(improvementId), `status ${improved.status}`);
+    const improveData = improved.body.data as { improvementId?: string; imageUrl?: string; status?: string } | undefined;
+    const improvementId = improveData?.improvementId;
+    check(
+      "POST /branding/improve returns image",
+      improved.status === 200 && Boolean(improvementId) && Boolean(improveData?.imageUrl),
+      `status ${improved.status} imageUrl=${Boolean(improveData?.imageUrl)}`,
+    );
 
     const polledImprove = await pollAiJob(async () => {
       const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${improvementId}`, headers: userAuth });
@@ -493,8 +498,11 @@ async function main() {
     });
     check(
       "POST /profile-review/analyze 50 credits",
-      review.status === 200 && (review.body.data as { creditsDeducted?: number })?.creditsDeducted === 50,
-      `status ${review.status}`,
+      review.status === 200 &&
+        (review.body.data as { creditsDeducted?: number })?.creditsDeducted === 50 &&
+        Array.isArray((review.body.data as { photos?: unknown[] })?.photos) &&
+        Number((review.body.data as { overallScore?: number })?.overallScore ?? -1) >= 0,
+      `status ${review.status} score=${(review.body.data as { overallScore?: number })?.overallScore}`,
     );
 
     const project = await inject({
