@@ -501,7 +501,9 @@ async function main() {
       review.status === 200 &&
         (review.body.data as { creditsDeducted?: number })?.creditsDeducted === 50 &&
         Array.isArray((review.body.data as { photos?: unknown[] })?.photos) &&
-        Number((review.body.data as { overallScore?: number })?.overallScore ?? -1) >= 0,
+        Number((review.body.data as { overallScore?: number })?.overallScore ?? -1) >= 0 &&
+        Boolean((review.body.data as { summary?: string })?.summary) &&
+        Array.isArray((review.body.data as { metrics?: unknown[] })?.metrics),
       `status ${review.status} score=${(review.body.data as { overallScore?: number })?.overallScore}`,
     );
 

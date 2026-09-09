@@ -300,7 +300,8 @@ export const openApiDocument = {
       post: op("Profile review", {
         tags: ["Reviews"],
         security: firebaseUser,
-        description: "Requires at least 2 upload IDs. Returns per-photo scores, bestIndex, overallScore, and improvementTips.",
+        description:
+          "Requires at least 2 upload IDs. Returns detailed analysis: per-photo summary/metrics/tips, overall summary, comparison, recommendation, category metrics, and use-case photo picks. Existing keys (photos, bestIndex, overallScore, summary, improvementTips, strengths) stay in place.",
         parameters: [idempotencyHeader],
         requestBody: json({
           type: "object",

@@ -107,7 +107,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const apiKeys = new ApiKeysService(cache);
   const headshots = new HeadshotsService(config, credits, queue, storage, gemini, bfl);
   const branding = new BrandingService(config, credits, queue, gemini, storage);
-  const reviews = new ProfileReviewService(config, credits, gemini);
+  const reviews = new ProfileReviewService(config, credits, gemini, storage);
   const subs = new SubscriptionsService(config);
   const projects = new ProjectsService();
   const notifications = new NotificationsService();
