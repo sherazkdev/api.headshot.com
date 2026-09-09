@@ -1,6 +1,6 @@
 import type { UserDoc } from "../models/index.js";
 
-function asDate(value: unknown): Date | null {
+export function asDate(value: unknown): Date | null {
   if (!value) return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   if (typeof value === "object" && "toDate" in (value as object) && typeof (value as { toDate: () => Date }).toDate === "function") {
@@ -55,4 +55,12 @@ export function walletView(user: UserDoc) {
     usesLeft: usesLeft(user),
     adRewardClaimed: Boolean(user.adRewardClaimed),
   };
+}
+
+export function publicUser(user: UserDoc & { toObject?: () => Record<string, unknown> }) {
+  const raw = typeof user.toObject === "function" ? user.toObject() : { ...(user as object) };
+  const obj = { ...raw } as Record<string, unknown>;
+  delete obj.save;
+  delete obj.toObject;
+  return { ...obj, ...walletView(user) };
 }

@@ -123,13 +123,16 @@ export class CreditsService {
   async claimAdReward(uid: string, ssvTransactionId?: string) {
     const user = await this.requireUser(uid);
     if (user.adRewardClaimed) return walletView(user);
-    if (!ssvTransactionId) throw errors.badRequest("ssvTransactionId is required until AdMob SSV is processed");
-    const event = await WebhookEventModel.findOne({
-      eventId: ssvTransactionId,
-      source: "admob_ssv",
-    });
-    if (!event) throw errors.notFound("SSV transaction not found");
-    return this.grantAdRewardOnce(uid, ssvTransactionId);
+    if (ssvTransactionId) {
+      const event = await WebhookEventModel.findOne({
+        eventId: ssvTransactionId,
+        source: "admob_ssv",
+      });
+      if (!event) throw errors.notFound("SSV transaction not found");
+      return this.grantAdRewardOnce(uid, ssvTransactionId);
+    }
+    // Temporary: grant without AdMob SSV until callback URL is configured.
+    return this.grantAdRewardOnce(uid, `client_claim_${uid}`);
   }
 
   async grantAdRewardOnce(uid: string, transactionId: string) {

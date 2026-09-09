@@ -1,6 +1,6 @@
 import { UserModel } from "../../models/index.js";
 import { errors } from "../../lib/errors.js";
-import { walletView } from "../../lib/wallet.js";
+import { publicUser, walletView } from "../../lib/wallet.js";
 import { MemoryCache } from "../../cache/index.js";
 import { pageMeta } from "../../lib/zod.js";
 import { LocalStorage } from "../../lib/storage.js";
@@ -121,8 +121,7 @@ export class UsersService {
   }
 
   private public(user: { toObject: () => Record<string, unknown> } & Parameters<typeof walletView>[0]) {
-    const obj = user.toObject();
-    return { ...obj, ...walletView(user) };
+    return publicUser(user);
   }
 
   private async require(uid: string, blockInactive: boolean) {

@@ -218,7 +218,11 @@ async function main() {
     );
 
     const claimNoSsv = await inject({ method: "POST", url: "/v1/credits/ad-reward/claim", headers: userAuth, payload: {} });
-    check("POST /credits/ad-reward/claim without SSV", claimNoSsv.status === 400, `status ${claimNoSsv.status}`);
+    check(
+      "POST /credits/ad-reward/claim without SSV",
+      claimNoSsv.status === 200 && (claimNoSsv.body.data as { credits?: number })?.credits === 50,
+      `status ${claimNoSsv.status} credits=${(claimNoSsv.body.data as { credits?: number })?.credits}`,
+    );
 
     const ssvId = `ssv_${uid}`;
     const ssv = await inject({
@@ -340,8 +344,13 @@ async function main() {
       );
     }
 
-    const sync = await inject({ method: "POST", url: "/v1/subscriptions/sync", headers: userAuth });
-    check("POST /subscriptions/sync", sync.status === 200 && (sync.body.data as { isPremium?: boolean })?.isPremium === true, `status ${sync.status}`);
+    const sync = await inject({ method: "POST", url: "/v1/subscriptions/sync", headers: userAuth, payload: {} });
+    const syncData = sync.body.data as { isPremium?: boolean; uid?: string; credits?: number };
+    check(
+      "POST /subscriptions/sync",
+      sync.status === 200 && syncData?.isPremium === true && Boolean(syncData?.uid),
+      `status ${sync.status} uid=${syncData?.uid}`,
+    );
 
     const restore = await inject({ method: "POST", url: "/v1/subscriptions/restore", headers: userAuth, payload: { tokens: [`tok_${uid}`] } });
     check("POST /subscriptions/restore", restore.status === 200, `status ${restore.status}`);

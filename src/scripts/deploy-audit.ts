@@ -132,7 +132,7 @@ async function main() {
     check("POST /credits/consume 402", consume402.status === 402, consume402.status);
 
     const claimEmpty = await req("POST", "/credits/ad-reward/claim", { token: userToken, json: {} });
-    check("POST /credits/ad-reward/claim empty", claimEmpty.status >= 400, claimEmpty.status);
+    check("POST /credits/ad-reward/claim empty", claimEmpty.status === 200, claimEmpty.status);
 
     const ssvId = `ssv_${uid}`;
     const ssv = await req("GET", `/webhooks/admob-ssv?user_id=${uid}&transaction_id=${ssvId}&reward_amount=50`);

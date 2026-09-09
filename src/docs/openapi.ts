@@ -199,9 +199,11 @@ export const openApiDocument = {
       }),
     },
     "/credits/ad-reward/claim": {
-      post: op("Claim ad reward (SSV)", {
+      post: op("Claim ad reward", {
         tags: ["Credits"],
         security: firebaseUser,
+        description:
+          "ssvTransactionId is optional until AdMob SSV is enabled. Empty body grants the rewarded-ad credits once. If ssvTransactionId is sent, it must match a processed AdMob SSV webhook.",
         requestBody: json(
           {
             type: "object",
@@ -334,7 +336,8 @@ export const openApiDocument = {
       post: op("Sync entitlement", {
         tags: ["Subscriptions"],
         security: firebaseUser,
-        description: "No body — syncs from stored purchase records.",
+        description:
+          "No body required. Expires an overdue pass if needed and returns the same profile shape as GET /user/profile. Always JSON — never an empty gateway error.",
       }),
     },
     "/subscriptions/restore": {

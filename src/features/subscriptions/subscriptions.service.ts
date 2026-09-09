@@ -1,6 +1,6 @@
 import { CREDIT_GRANTS, PASS_DURATION_MS, PLAY_LIST_PRICES, type ProductId } from "../../config/credits.js";
-import { errors } from "../../lib/errors.js";
-import { walletView } from "../../lib/wallet.js";
+import { errors, isAppError } from "../../lib/errors.js";
+import { asDate, publicUser } from "../../lib/wallet.js";
 import { verifyPlaySubscription } from "../../lib/play-billing.js";
 import { isDuplicateKeyError } from "../../lib/mongo-dup.js";
 import { PurchaseModel, UserModel } from "../../models/index.js";
@@ -69,15 +69,30 @@ export class SubscriptionsService {
   }
 
   async sync(uid: string) {
+    try {
+      return await withTimeout(this.syncOnce(uid), 8_000);
+    } catch (err) {
+      if (isAppError(err) && err.httpStatus < 500) throw err;
+      throw isAppError(err) ? err : errors.server("Subscription sync failed");
+    }
+  }
+
+  private async syncOnce(uid: string) {
     const user = await this.requireUser(uid);
-    if (user.passExpiresAt && user.passExpiresAt < new Date()) {
+    const exp = asDate(user.passExpiresAt);
+    if (exp && exp.getTime() <= Date.now()) {
       user.passCredits = 0;
       user.activePassId = null;
       user.isPremium = false;
       user.premiumStatus = user.premiumStatus === "cancelled" ? "cancelled" : "expired";
-      await user.save();
+      user.passExpiresAt = null;
+      try {
+        await withTimeout(user.save(), 2_000);
+      } catch {
+        /* still return in-memory expired view so nginx always gets a body */
+      }
     }
-    return walletView(user);
+    return publicUser(user);
   }
 
   async restore(uid: string, tokens: string[]) {
@@ -173,5 +188,19 @@ export class SubscriptionsService {
     if (!user) throw errors.notFound("User not found");
     if (user.accountStatus === "deleted") throw errors.forbidden("Account deleted");
     return user;
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(errors.server("Subscription sync timed out")), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
