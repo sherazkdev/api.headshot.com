@@ -18,7 +18,7 @@ export class AnalyticsService {
         { $group: { _id: null, revenue: { $sum: "$amount" }, credits: { $sum: "$creditsAdded" }, n: { $sum: 1 } } },
       ]),
     ]);
-    const wallets = await UserModel.find({ accountStatus: "active" }).select("credits passCredits passExpiresAt");
+    const wallets = await UserModel.find({}).select("credits passCredits passExpiresAt").limit(5000);
     const spendable = wallets.reduce((sum, u) => sum + spendableCredits(u), 0);
     return {
       totalUsers: users,
@@ -74,11 +74,11 @@ export class AnalyticsService {
 
   async wallets(page: number, perPage: number) {
     const [items, total] = await Promise.all([
-      UserModel.find({ accountStatus: "active" })
+      UserModel.find({})
         .sort({ updatedAt: -1 })
         .skip((page - 1) * perPage)
         .limit(perPage),
-      UserModel.countDocuments({ accountStatus: "active" }),
+      UserModel.countDocuments({}),
     ]);
     return { items, meta: pageMeta(page, perPage, total) };
   }

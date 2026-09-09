@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Crown, Download, Plus, Search, ShieldAlert, UserCheck, Users } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { fmt, initials, when } from "@/lib/format";
-import { Badge, Button, Card, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
+import { Badge, Banner, Button, Card, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
 import { trendHint } from "@/lib/chart-data";
 import { clsx } from "@/components/clsx";
 
@@ -30,10 +30,11 @@ export default function UsersPage() {
   const [provider, setProvider] = useState("all");
   const [premium, setPremium] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([
-      api<{ data: { items: User[] } }>("/admin/users"),
+      api<{ data: { items: User[] } }>("/admin/users?page=1&per_page=100"),
       api<{ data: { totalUsers?: number; premium?: number; suspended?: number } }>("/admin/overview"),
     ])
       .then(([users, overview]) => {
@@ -43,8 +44,12 @@ export default function UsersPage() {
           premium: overview.data.premium ?? 0,
           suspended: overview.data.suspended ?? 0,
         });
+        setError("");
       })
-      .catch(() => setItems([]));
+      .catch((err) => {
+        setItems([]);
+        setError(errorMessage(err));
+      });
   }, []);
 
   const filtered = useMemo(
@@ -68,6 +73,7 @@ export default function UsersPage() {
   return (
     <div>
       <PageHeader title="Users" subtitle="Manage registered accounts and access." />
+      {error ? <Banner tone="warning" className="mb-4">{error}</Banner> : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Users" value={fmt(totals.totalUsers)} hint={trendHint(totals.totalUsers)} icon={<Users size={18} />} />
         <StatCard label="Active" value={fmt(Math.max(totals.totalUsers - totals.suspended, 0))} hint={trendHint(Math.max(totals.totalUsers - totals.suspended, 0))} tone="success" icon={<UserCheck size={18} />} />

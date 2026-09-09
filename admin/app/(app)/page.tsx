@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CreditCard, Sparkles, Users, Wallet } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { countBy, fmt, initials, when } from "@/lib/format";
-import { Badge, Card, DateRangeSelect, PageHeader, StatCard } from "@/components/ui";
+import { Badge, Banner, Card, DateRangeSelect, PageHeader, StatCard } from "@/components/ui";
 import { BarCard, DonutCard, DualLineCard, EmptyChart } from "@/components/charts";
 import { donutFromCounts, trendHint, usersGenerationsSeries } from "@/lib/chart-data";
 
@@ -27,6 +27,7 @@ export default function OverviewPage() {
   const [byStatus, setByStatus] = useState<Bucket[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
   const [live, setLive] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -41,10 +42,11 @@ export default function OverviewPage() {
         setByType(usage.data.byEndpoint ?? []);
         setByStatus(usage.data.byStatus ?? []);
         setSubs(subRes.data.items ?? []);
+        setError("");
         setLive(true);
       })
       .catch((err) => {
-        console.error("overview load failed", err);
+        setError(errorMessage(err));
         setLive(true);
       });
   }, []);
@@ -64,6 +66,7 @@ export default function OverviewPage() {
         subtitle="Platform health and business performance"
         actions={<DateRangeSelect />}
       />
+      {error ? <Banner tone="warning" className="mb-4">{error}</Banner> : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Users" value={live ? fmt(users) : "—"} hint={trendHint(users)} icon={<Users size={18} />} />
         <StatCard label="Spendable Credits" value={live ? fmt(Number(data.spendableCredits ?? 0)) : "—"} hint={trendHint(Number(data.spendableCredits ?? 0))} icon={<Wallet size={18} />} />

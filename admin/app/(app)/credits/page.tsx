@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Gift, Sparkles, Ticket, Wallet } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { fmt, initials } from "@/lib/format";
-import { Badge, Card, DateRangeSelect, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
+import { Badge, Banner, Card, DateRangeSelect, Input, PageHeader, Pagination, Select, StatCard } from "@/components/ui";
 import { AreaCard, DonutCard } from "@/components/charts";
 import { areaTrend, donutFromCounts, trendHint } from "@/lib/chart-data";
 
@@ -28,17 +28,22 @@ const CREDIT_RULES = [
 export default function CreditsPage() {
   const [rows, setRows] = useState<WalletRow[]>([]);
   const [spendable, setSpendable] = useState(0);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([
-      api<{ data: { items: WalletRow[] } }>("/admin/wallets"),
+      api<{ data: { items: WalletRow[] } }>("/admin/wallets?page=1&per_page=100"),
       api<{ data: { spendableCredits?: number } }>("/admin/overview"),
     ])
       .then(([wallets, overview]) => {
         setRows(wallets.data.items ?? []);
         setSpendable(overview.data.spendableCredits ?? 0);
+        setError("");
       })
-      .catch(() => setRows([]));
+      .catch((err) => {
+        setRows([]);
+        setError(errorMessage(err));
+      });
   }, []);
 
   const pass = rows.reduce((s, r) => s + (r.wallet?.passCredits ?? r.passCredits ?? 0), 0);
@@ -48,6 +53,7 @@ export default function CreditsPage() {
   return (
     <div>
       <PageHeader title="Credits & Wallet" subtitle="Monitor platform credit balances and usage." actions={<DateRangeSelect />} />
+      {error ? <Banner tone="warning" className="mb-4">{error}</Banner> : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Spendable Credits" value={fmt(spendable)} hint={trendHint(spendable)} icon={<Wallet size={18} />} />
         <StatCard label="Pass Credits" value={fmt(pass)} hint={trendHint(pass)} icon={<Ticket size={18} />} />

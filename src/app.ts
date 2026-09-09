@@ -63,7 +63,12 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, {
-    origin: [config.ADMIN_ORIGIN, "http://localhost:3001"],
+    origin: [
+      config.ADMIN_ORIGIN,
+      "http://localhost:3001",
+      "https://aiheadshotapi.com",
+      config.PUBLIC_BASE_URL,
+    ].filter((origin): origin is string => Boolean(origin)),
     credentials: true,
   });
   await app.register(cookie);

@@ -40,6 +40,12 @@ export class ApiError extends Error {
   }
 }
 
+export function errorMessage(err: unknown): string {
+  if (err instanceof ApiError) return err.message;
+  if (err instanceof Error) return err.message;
+  return "Failed to load data";
+}
+
 export async function api<T>(
   path: string,
   init: RequestInit & { json?: unknown } = {},

@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Loader2, Workflow } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, errorMessage } from "@/lib/api";
 import { fmt, when } from "@/lib/format";
-import { Badge, Card, Input, PageHeader, Pagination, Select, StatCard, Tabs } from "@/components/ui";
+import { Badge, Banner, Card, Input, PageHeader, Pagination, Select, StatCard, Tabs } from "@/components/ui";
 import { BarCard } from "@/components/charts";
 import { trendHint } from "@/lib/chart-data";
 
@@ -30,6 +30,7 @@ export default function JobsPage() {
   const [type, setType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [meta, setMeta] = useState({ total: 0, last_page: 1 });
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const status = tab === "all" ? "" : tab === "running" ? "processing" : tab;
@@ -40,8 +41,12 @@ export default function JobsPage() {
         setItems(r.data.items ?? []);
         setQueue(r.data.queue ?? {});
         setMeta({ total: r.data.meta?.total ?? r.data.items?.length ?? 0, last_page: r.data.meta?.last_page ?? 1 });
+        setError("");
       })
-      .catch(() => setItems([]));
+      .catch((err) => {
+        setItems([]);
+        setError(errorMessage(err));
+      });
   }, [tab]);
 
   const filtered = useMemo(
@@ -70,6 +75,7 @@ export default function JobsPage() {
   return (
     <div>
       <PageHeader title="AI Jobs" subtitle="Queue, retries, and provider outcomes across all generation tools." />
+      {error ? <Banner tone="warning" className="mb-4">{error}</Banner> : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="In Queue" value={fmt(queued)} hint={trendHint(queued)} icon={<Loader2 size={18} />} />
         <StatCard label="Running" value={fmt(running)} hint={trendHint(running)} tone="info" icon={<Workflow size={18} />} />
