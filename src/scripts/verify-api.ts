@@ -458,12 +458,23 @@ async function main() {
       headers: userAuth,
       payload: { uploadId: brandingId },
     });
-    const improveData = improved.body.data as { improvementId?: string; imageUrl?: string; status?: string } | undefined;
+    const improveData = improved.body.data as {
+      improvementId?: string;
+      imageUrl?: string;
+      status?: string;
+      overallScore?: number;
+      metrics?: unknown[];
+    } | undefined;
     const improvementId = improveData?.improvementId;
     check(
       "POST /branding/improve returns image",
       improved.status === 200 && Boolean(improvementId) && Boolean(improveData?.imageUrl),
       `status ${improved.status} imageUrl=${Boolean(improveData?.imageUrl)}`,
+    );
+    check(
+      "POST /branding/improve returns scores",
+      Number(improveData?.overallScore ?? 0) > 0 && Array.isArray(improveData?.metrics) && (improveData?.metrics.length ?? 0) >= 5,
+      `score=${improveData?.overallScore} metrics=${improveData?.metrics?.length}`,
     );
 
     const polledImprove = await pollAiJob(async () => {
