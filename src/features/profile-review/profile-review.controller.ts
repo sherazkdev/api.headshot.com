@@ -15,6 +15,7 @@ export class ProfileReviewController {
   analyze = async (req: FastifyRequest) => {
     const { uid } = this.auth.requireUser(req);
     rateGuard.hit("profile-review.analyze", uid, 10, 3600_000);
+    if (typeof req.raw.setTimeout === "function") req.raw.setTimeout(0);
     const body = parseBody(z.object({ uploadIds: z.array(z.string()).min(2) }), req.body);
     const key = req.headers["idempotency-key"];
     return ok(await this.service.analyze(uid, body.uploadIds, Array.isArray(key) ? key[0] : key));

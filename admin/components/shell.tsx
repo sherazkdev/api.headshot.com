@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, BookOpen, Home, LogOut, Menu, Search, Settings, Sun, Moon, X } from "lucide-react";
-import { getToken, setToken } from "@/lib/api";
+import { clearApiKey, getToken, setToken } from "@/lib/api";
 import { crumbs, isActive, NAV } from "@/lib/nav";
 import { useTheme } from "./theme-provider";
 import { HeadshotMark } from "./logo";
@@ -89,6 +89,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-subtle hover:bg-muted"
             onClick={() => {
               setToken("");
+              clearApiKey();
               router.replace("/login");
             }}
           >
@@ -116,7 +117,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="ml-auto flex items-center gap-1">
             <a
-              href="http://127.0.0.1:3000/docs"
+              href="/docs"
               target="_blank"
               rel="noreferrer"
               className="rounded-btn p-2 hover:bg-muted"

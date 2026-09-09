@@ -25,10 +25,9 @@ export class AuthValidator {
   ) {}
 
   async authenticate(req: FastifyRequest): Promise<AuthPrincipal> {
-    const apiKey = this.header(req, API_KEY_HEADER) ?? this.header(req, "x-api-key");
-    if (apiKey) return this.fromApiKey(apiKey);
-
+    const apiKeyHeader = this.header(req, API_KEY_HEADER) ?? this.header(req, "x-api-key");
     const bearer = this.bearer(req) ?? this.cookie(req);
+
     if (bearer) {
       try {
         const decoded = req.server.jwt.verify<{ sub?: string; email?: string; kind?: string; name?: string }>(bearer);
@@ -37,8 +36,14 @@ export class AuthValidator {
           return { kind: "user", uid: decoded.sub, email: decoded.email, name: decoded.name };
         }
       } catch {
-        /* not an admin/dev JWT */
+        /* not our JWT — try API key / Firebase next */
       }
+      if (bearer.startsWith("x-api-key_")) return this.fromApiKey(bearer);
+    }
+
+    if (apiKeyHeader) return this.fromApiKey(apiKeyHeader);
+
+    if (bearer) {
       try {
         const user = await this.firebase.verifyIdToken(bearer);
         return { kind: "user", uid: user.uid, email: user.email, name: user.name };

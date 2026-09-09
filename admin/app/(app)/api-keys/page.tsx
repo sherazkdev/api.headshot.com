@@ -13,7 +13,7 @@ import {
   RefreshCw,
   RotateCcw,
 } from "lucide-react";
-import { api, setApiKey } from "@/lib/api";
+import { api } from "@/lib/api";
 import { fmt, initials, when } from "@/lib/format";
 import { Banner, Button, Card, Input, Modal, PageHeader, Pagination, Select, StatCard, StatusDot, Tabs } from "@/components/ui";
 import { DualLineCard } from "@/components/charts";
@@ -410,10 +410,9 @@ export default function ApiKeysPage() {
             <Button
               onClick={() => {
                 void navigator.clipboard.writeText(created.plaintext);
-                setApiKey(created.plaintext);
               }}
             >
-              Copy & use as x-api-key
+              Copy key
             </Button>
             <Button variant="outline" onClick={() => setCreated(null)}>Done</Button>
           </div>

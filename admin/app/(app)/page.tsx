@@ -43,7 +43,10 @@ export default function OverviewPage() {
         setSubs(subRes.data.items ?? []);
         setLive(true);
       })
-      .catch(() => setLive(true));
+      .catch((err) => {
+        console.error("overview load failed", err);
+        setLive(true);
+      });
   }, []);
 
   const statusN = (id: string) => byStatus.find((s) => s._id === id)?.n ?? 0;

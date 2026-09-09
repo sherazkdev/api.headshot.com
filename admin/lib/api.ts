@@ -20,7 +20,12 @@ export function getApiKey() {
 }
 
 export function setApiKey(key: string) {
-  localStorage.setItem(API_KEY_STORAGE, key);
+  if (!key) localStorage.removeItem(API_KEY_STORAGE);
+  else localStorage.setItem(API_KEY_STORAGE, key);
+}
+
+export function clearApiKey() {
+  localStorage.removeItem(API_KEY_STORAGE);
 }
 
 export class ApiError extends Error {
@@ -43,12 +48,10 @@ export async function api<T>(
   const headers = new Headers(rest.headers);
   headers.set("content-type", "application/json");
   const token = getToken();
-  const apiKey = getApiKey();
-  if (apiKey) headers.set("x-api-key", apiKey);
-  else if (token) headers.set("authorization", `Bearer ${token}`);
+  if (token) headers.set("authorization", `Bearer ${token}`);
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12_000);
+  const timer = setTimeout(() => controller.abort(), 60_000);
   if (signal) {
     if (signal.aborted) controller.abort();
     else signal.addEventListener("abort", () => controller.abort(), { once: true });

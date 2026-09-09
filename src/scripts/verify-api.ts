@@ -176,6 +176,24 @@ async function main() {
     const viaKey = await inject({ method: "GET", url: "/v1/admin/api-keys/stats", headers: { "x-api-key": plaintext ?? "" } });
     check("Admin route via x-api-key", viaKey.status === 200, `status ${viaKey.status}`);
 
+    const viaBearerKey = await inject({
+      method: "GET",
+      url: "/v1/admin/overview",
+      headers: { authorization: `Bearer ${plaintext ?? ""}` },
+    });
+    check(
+      "Admin route via API key as Bearer",
+      viaBearerKey.status === 200 && typeof (viaBearerKey.body.data as { totalUsers?: number })?.totalUsers === "number",
+      `status ${viaBearerKey.status}`,
+    );
+
+    const keyOnUser = await inject({ method: "GET", url: "/v1/credits", headers: { "x-api-key": plaintext ?? "" } });
+    check(
+      "x-api-key cannot call user routes",
+      keyOnUser.status === 401 && keyOnUser.body.error?.message === "Firebase user token required",
+      `status ${keyOnUser.status} ${keyOnUser.body.error?.message ?? ""}`,
+    );
+
     const boot = await inject({ method: "POST", url: "/v1/user/bootstrap", headers: userAuth });
     check("POST /user/bootstrap", boot.status === 200 && (boot.body.data as { uid?: string })?.uid === uid, `status ${boot.status}`);
 

@@ -23,6 +23,7 @@ export class BrandingController {
   improve = async (req: FastifyRequest) => {
     const { uid } = this.auth.requireUser(req);
     rateGuard.hit("branding.improve", uid, 10, 3600_000);
+    if (typeof req.raw.setTimeout === "function") req.raw.setTimeout(0);
     const body = parseBody(z.object({ uploadId: z.string(), enhancementPrompt: z.string().optional() }), req.body);
     const key = header(req, "idempotency-key");
     return ok(await this.service.improve(uid, body.uploadId, body.enhancementPrompt, key));

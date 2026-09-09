@@ -8,7 +8,6 @@ function loadDotEnv() {
   const alwaysFromFile = new Set([
     "PORT",
     "BIND_HOST",
-    "NODE_ENV",
     "PUBLIC_BASE_URL",
     "ADMIN_ORIGIN",
     "API_BASE_PATH",

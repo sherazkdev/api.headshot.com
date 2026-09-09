@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const apiPort = process.env.API_PORT || process.env.PORT || "3016";
+const apiPort = process.env.API_PORT || "3016";
 
 const nextConfig = {
   reactStrictMode: true,

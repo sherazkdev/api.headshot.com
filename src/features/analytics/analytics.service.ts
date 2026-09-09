@@ -12,7 +12,7 @@ export class AnalyticsService {
       UserModel.countDocuments({ accountStatus: { $ne: "deleted" } }),
       UserModel.countDocuments({ isPremium: true }),
       UserModel.countDocuments({ accountStatus: "suspended" }),
-      AiJobModel.countDocuments({ jobType: "headshot_generation" }),
+      AiJobModel.countDocuments({}),
       PurchaseModel.aggregate<{ revenue: number; credits: number; n: number }>([
         { $match: { status: "completed" } },
         { $group: { _id: null, revenue: { $sum: "$amount" }, credits: { $sum: "$creditsAdded" }, n: { $sum: 1 } } },
@@ -49,7 +49,7 @@ export class AnalyticsService {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const today = await AiJobModel.aggregate<{ _id: string; n: number }>([
-      { $match: { createdAt: { $gte: start }, jobType: "headshot_generation" } },
+      { $match: { createdAt: { $gte: start } } },
       { $group: { _id: "$uid", n: { $sum: 1 } } },
       { $match: { n: { $gt: GENERATIONS_PER_DAY_ALERT } } },
     ]);

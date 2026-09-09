@@ -55,7 +55,8 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
     },
     trustProxy: true,
     requestTimeout: Math.max(config.AI_REQUEST_TIMEOUT_MS, 300_000),
-    connectionTimeout: 10_000,
+    // 0 = do not kill long Gemini calls. 10s inactivity was closing /branding/improve → nginx 502.
+    connectionTimeout: 0,
     keepAliveTimeout: 310_000,
     bodyLimit: config.MAX_UPLOAD_MB * 1024 * 1024,
   });

@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail, Moon, Sun } from "lucide-react";
-import { api, setToken } from "@/lib/api";
+import { api, clearApiKey, setToken } from "@/lib/api";
 import { useTheme } from "@/components/theme-provider";
 import { HeadshotMark } from "@/components/logo";
 import { clsx } from "@/components/clsx";
@@ -34,6 +34,7 @@ export default function LoginPage() {
         json: { email: email.trim(), password },
       });
       setToken(res.data.token);
+      clearApiKey();
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
