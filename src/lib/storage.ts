@@ -49,6 +49,15 @@ export class LocalStorage {
     return `${base}${pathPart}`;
   }
 
+  async readBytes(filePath: string): Promise<Buffer> {
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+      const res = await fetch(filePath);
+      if (!res.ok) throw new Error(`Upload fetch failed (${res.status})`);
+      return Buffer.from(await res.arrayBuffer());
+    }
+    return fs.readFile(filePath);
+  }
+
   private async saveCloud(objectPath: string, bytes: Buffer, contentType: string): Promise<string | null> {
     try {
       const bucket = getStorage().bucket();

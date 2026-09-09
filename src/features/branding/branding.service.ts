@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import { CREDIT_COSTS } from "../../config/credits.js";
 import { errors } from "../../lib/errors.js";
 import { asDate } from "../../lib/wallet.js";
@@ -102,23 +101,17 @@ export class BrandingService {
       const uploadId = String(job.payload.uploadId ?? "");
       const prompt = String(job.payload.enhancementPrompt ?? "");
       const upload = await this.loadUpload(job.uid, uploadId);
-      const bytes = await fs.readFile(upload.path);
+      const bytes = await this.storage.readBytes(upload.path);
       const imageB64 = await this.gemini.generateImage(prompt, bytes.toString("base64"), upload.mimeType);
       const out = await this.storage.saveGenerated(job.uid, `branding_${job.jobId}`, Buffer.from(imageB64, "base64"));
       const imageUrl = this.storage.url(out, this.config);
-      let vision: Record<string, unknown> = {};
-      try {
-        vision = (await this.gemini.visionJson(ANALYZE_PROMPT, [{ mimeType: "image/png", data: imageB64 }])) as Record<string, unknown>;
-      } catch {
-        /* image still returned even if rescoring fails */
-      }
       const consumed = await this.credits.consume(job.uid, CREDIT_COSTS.branding_improve, "branding_improve", uploadId, `job:${job.jobId}`, {
         reuseIdempotency: true,
       });
       job.status = "completed";
       job.fromPassCredits = consumed.fromPassCredits;
       job.fromBonusCredits = consumed.fromBonusCredits;
-      job.result = { ...vision, imageUrl, remainingSpendable: consumed.remainingSpendable };
+      job.result = { imageUrl, remainingSpendable: consumed.remainingSpendable };
       await job.save();
     } catch (err) {
       const latest = await AiJobModel.findOne({ jobId: payload.jobId });
@@ -143,7 +136,7 @@ export class BrandingService {
 
   private async scoreUpload(uid: string, uploadId: string) {
     const upload = await this.loadUpload(uid, uploadId);
-    const bytes = await fs.readFile(upload.path);
+    const bytes = await this.storage.readBytes(upload.path);
     return (await this.gemini.visionJson(ANALYZE_PROMPT, [
       { mimeType: upload.mimeType, data: bytes.toString("base64") },
     ])) as Record<string, unknown>;

@@ -54,9 +54,9 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
       level: config.isProd ? "info" : "debug",
     },
     trustProxy: true,
-    requestTimeout: config.AI_REQUEST_TIMEOUT_MS,
+    requestTimeout: Math.max(config.AI_REQUEST_TIMEOUT_MS, 300_000),
     connectionTimeout: 10_000,
-    keepAliveTimeout: 72_000,
+    keepAliveTimeout: 310_000,
     bodyLimit: config.MAX_UPLOAD_MB * 1024 * 1024,
   });
 

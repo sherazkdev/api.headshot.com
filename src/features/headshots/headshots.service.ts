@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import type { AppConfig } from "../../config/index.js";
 import { CREDIT_COSTS } from "../../config/credits.js";
 import { errors } from "../../lib/errors.js";
@@ -144,7 +143,7 @@ export class HeadshotsService {
       const uploadId = String(job.payload.uploadId ?? "");
       const upload = await UploadModel.findOne({ uploadId, uid: job.uid });
       if (!upload) throw errors.notFound("Upload missing");
-      const bytes = await fs.readFile(upload.path);
+      const bytes = await this.storage.readBytes(upload.path);
       const b64 = bytes.toString("base64");
       const selections = (job.payload.selections ?? {}) as Record<string, { id?: string; prompt?: string }>;
       const referencePrompts = (job.payload.referencePrompts ?? []) as Array<{
