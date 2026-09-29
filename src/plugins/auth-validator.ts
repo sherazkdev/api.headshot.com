@@ -29,14 +29,21 @@ export class AuthValidator {
     const bearer = this.bearer(req) ?? this.cookie(req);
 
     if (bearer) {
+      let appJwtNotAccepted = false;
       try {
         const decoded = req.server.jwt.verify<{ sub?: string; email?: string; kind?: string; name?: string }>(bearer);
         if (decoded.kind === "admin" && decoded.email) return { kind: "admin", email: decoded.email };
         if (decoded.kind === "user" && decoded.sub && this.options.allowDevUserJwt) {
           return { kind: "user", uid: decoded.sub, email: decoded.email, name: decoded.name };
         }
+        if (decoded.kind === "admin" || decoded.kind === "user") appJwtNotAccepted = true;
       } catch {
-        /* not our JWT — try API key / Firebase next */
+        if (this.isAppSessionJwt(bearer)) {
+          throw errors.unauthorized("Session expired or invalid. Please sign in again.");
+        }
+      }
+      if (appJwtNotAccepted) {
+        throw errors.unauthorized("Session expired or invalid. Please sign in again.");
       }
       if (bearer.startsWith("x-api-key_")) return this.fromApiKey(bearer);
     }
@@ -119,5 +126,24 @@ export class AuthValidator {
   private header(req: FastifyRequest, name: string): string | undefined {
     const value = req.headers[name];
     return Array.isArray(value) ? value[0] : value;
+  }
+
+  /** Unsigned peek — only used after verify failure to avoid treating our admin JWT as a Firebase ID token. */
+  private isAppSessionJwt(token: string): boolean {
+    const kind = this.peekJwtPayload(token)?.kind;
+    return kind === "admin" || kind === "user";
+  }
+
+  private peekJwtPayload(token: string): { kind?: string } | null {
+    const parts = token.split(".");
+    const payload = parts[1];
+    if (parts.length !== 3 || !payload) return null;
+    try {
+      const padded = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const json = Buffer.from(padded, "base64").toString("utf8");
+      return JSON.parse(json) as { kind?: string };
+    } catch {
+      return null;
+    }
   }
 }

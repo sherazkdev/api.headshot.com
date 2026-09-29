@@ -88,7 +88,14 @@ export async function api<T>(
     throw new ApiError(`Request failed (${res.status})`, res.status);
   }
   if (!res.ok) {
-    throw new ApiError(payload.error?.message ?? `Request failed (${res.status})`, res.status, payload.error?.code, payload.error?.details);
+    const message = payload.error?.message ?? `Request failed (${res.status})`;
+    if (res.status === 401 && token && !path.startsWith("/admin/login")) {
+      localStorage.removeItem(TOKEN_KEY);
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    throw new ApiError(message, res.status, payload.error?.code, payload.error?.details);
   }
   return payload;
 }
