@@ -77,7 +77,10 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   await app.register(rateLimit, {
     max: 100,
     timeWindow: "1 minute",
-    allowList: ["127.0.0.1"],
+    allowList: (req) => {
+      const path = req.url.split("?")[0] ?? "";
+      return req.ip === "127.0.0.1" || path.includes("/health");
+    },
   });
   await app.register(underPressure, {
     maxEventLoopDelay: 2000,
@@ -102,7 +105,7 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
 
   const cache = new MemoryCache(50_000);
   const queue = new MemoryQueue(config.MAX_INFLIGHT_AI);
-  const firebase = new FirebaseAuth(config);
+  const firebase = new FirebaseAuth(config, cache);
   const auth = new AuthValidator(firebase, cache, { allowDevUserJwt: !config.isProd });
   const gemini = new GeminiClient(config);
   const bfl = new BflClient(config);

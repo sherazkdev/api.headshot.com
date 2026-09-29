@@ -43,6 +43,10 @@ export const errors = {
   validation: (message: string, details?: Record<string, unknown>) =>
     new AppError(422, "VALIDATION_ERROR", message, details),
   rateLimited: () => new AppError(429, "RATE_LIMITED", "Too many requests"),
+  authUnavailable: () =>
+    new AppError(503, "AUTH_UNAVAILABLE", "Authentication service busy — please retry shortly"),
+  notReady: (message = "Service dependencies unavailable") =>
+    new AppError(503, "NOT_READY", message),
   aiBusy: () => new AppError(503, "AI_BUSY", "Gemini/BFL overloaded — retry"),
   server: (message = "Internal error") => new AppError(500, "SERVER_ERROR", message),
 };

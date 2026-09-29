@@ -76,6 +76,10 @@ const envSchema = z.object({
   IDEMPOTENCY_TTL_HOURS: z.coerce.number().default(24),
   MAX_UPLOAD_MB: z.coerce.number().default(10),
   AI_REQUEST_TIMEOUT_MS: z.coerce.number().default(180_000),
+  /** Cap hung Firebase verifyIdToken calls so auth storms cannot stall the event loop. */
+  FIREBASE_VERIFY_TIMEOUT_MS: z.coerce.number().default(8_000),
+  /** Short cache for verified Firebase ID tokens (per token hash). */
+  FIREBASE_TOKEN_CACHE_TTL_SEC: z.coerce.number().default(120),
 });
 
 export type AppConfig = z.infer<typeof envSchema> & {
