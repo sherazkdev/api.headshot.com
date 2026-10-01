@@ -415,17 +415,21 @@ async function main() {
     });
     check("Generate idempotency 409", genReplay.status === 409, `status ${genReplay.status}`);
 
-    const polled = await pollAiJob(async () => {
-      const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${jobId}`, headers: userAuth });
-      const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
-      return { status: data?.status, imageUrl: data?.imageUrl ?? null };
-    });
-    check(
-      "GET /headshots/jobs/:id completed",
-      polled.status === "completed" && Boolean(polled.imageUrl),
-      `status=${polled.status} polls=${polled.polls}`,
-      polled.waitMs,
-    );
+    if (!jobId) {
+      check("GET /headshots/jobs/:id completed", false, "skipped: generate did not return jobId");
+    } else {
+      const polled = await pollAiJob(async () => {
+        const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${jobId}`, headers: userAuth });
+        const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
+        return { status: data?.status, imageUrl: data?.imageUrl ?? null };
+      });
+      check(
+        "GET /headshots/jobs/:id completed",
+        polled.status === "completed" && Boolean(polled.imageUrl),
+        `status=${polled.status} polls=${polled.polls}`,
+        polled.waitMs,
+      );
+    }
 
     const resultsList = await inject({ method: "GET", url: "/v1/headshots/results", headers: userAuth });
     check("GET /headshots/results", resultsList.status === 200, `status ${resultsList.status}`);
@@ -477,22 +481,31 @@ async function main() {
       `score=${improveData?.overallScore} metrics=${improveData?.metrics?.length}`,
     );
 
-    const polledImprove = await pollAiJob(async () => {
-      const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${improvementId}`, headers: userAuth });
-      const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
-      return { status: data?.status, imageUrl: data?.imageUrl ?? null };
-    });
     const improveMs = Date.now() - improveStarted;
     const afterImprove = await inject({ method: "GET", url: "/v1/credits", headers: userAuth });
     const spendableAfter = Number((afterImprove.body.data as { spendableCredits?: number })?.spendableCredits ?? 0);
-    check(
-      "POST /branding/improve deducts 100 not 150",
-      polledImprove.status === "completed" &&
-        Boolean(polledImprove.imageUrl) &&
-        spendableBefore - spendableAfter === 100,
-      `delta=${spendableBefore - spendableAfter} status=${polledImprove.status} wait=${polledImprove.waitMs}ms`,
-      improveMs,
-    );
+    if (!improvementId) {
+      check(
+        "POST /branding/improve deducts 100 not 150",
+        false,
+        `skipped: improve did not return improvementId (status=${improved.status})`,
+        improveMs,
+      );
+    } else {
+      const polledImprove = await pollAiJob(async () => {
+        const job = await inject({ method: "GET", url: `/v1/headshots/jobs/${improvementId}`, headers: userAuth });
+        const data = job.body.data as { status?: string; imageUrl?: string } | undefined;
+        return { status: data?.status, imageUrl: data?.imageUrl ?? null };
+      });
+      check(
+        "POST /branding/improve deducts 100 not 150",
+        polledImprove.status === "completed" &&
+          Boolean(polledImprove.imageUrl) &&
+          spendableBefore - spendableAfter === 100,
+        `delta=${spendableBefore - spendableAfter} status=${polledImprove.status} wait=${polledImprove.waitMs}ms`,
+        improveMs,
+      );
+    }
 
     const photoA = await inject({
       method: "POST",

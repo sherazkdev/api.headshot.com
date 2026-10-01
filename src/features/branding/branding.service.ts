@@ -1,7 +1,8 @@
 import { CREDIT_COSTS } from "../../config/credits.js";
 import { errors } from "../../lib/errors.js";
 import { asDate } from "../../lib/wallet.js";
-import { GeminiClient } from "../../lib/ai-providers.js";
+import { AIProvider } from "../../lib/ai/index.js";
+import { aiTrace } from "../../lib/ai/job-meta.js";
 import { LocalStorage } from "../../lib/storage.js";
 import { rejectIfDuplicate } from "../../lib/idempotency.js";
 import { UploadModel, AiJobModel } from "../../models/index.js";
@@ -27,7 +28,7 @@ export class BrandingService {
     private readonly config: AppConfig,
     private readonly credits: CreditsService,
     private readonly queue: MemoryQueue,
-    private readonly gemini: GeminiClient,
+    private readonly ai: AIProvider,
     private readonly storage: LocalStorage,
   ) {
     this.queue.register("branding.improve", (job) => this.processImprove(job.payload as { jobId: string }));
@@ -37,7 +38,8 @@ export class BrandingService {
     const can = await this.credits.canProceed(uid, CREDIT_COSTS.branding_analyze);
     if (!can.allowed) throw errors.insufficientCredits(CREDIT_COSTS.branding_analyze, can.spendableCredits);
     await rejectIfDuplicate(uid, "branding.analyze", idempotencyKey, this.config.IDEMPOTENCY_TTL_HOURS);
-    const vision = normalizeBrandingScore(await this.scoreUpload(uid, uploadId));
+    const { data: visionRaw, meta: visionMeta } = await this.scoreUpload(uid, uploadId);
+    const vision = normalizeBrandingScore(visionRaw);
     const consumed = await this.credits.consume(uid, CREDIT_COSTS.branding_analyze, "branding_analyze", uploadId, idempotencyKey, {
       reuseIdempotency: true,
     });
@@ -46,14 +48,14 @@ export class BrandingService {
       jobId,
       uid,
       jobType: "branding_analyze",
-      provider: "gemini",
-      model: this.config.GEMINI_VISION_MODEL,
+      provider: visionMeta.provider,
+      model: visionMeta.model,
       status: "completed",
       credits: CREDIT_COSTS.branding_analyze,
       fromPassCredits: consumed.fromPassCredits,
       fromBonusCredits: consumed.fromBonusCredits,
       payload: { uploadId },
-      result: vision,
+      result: { ...vision, ...aiTrace(visionMeta) },
     });
     return { ...vision, analysisId: jobId, creditsDeducted: CREDIT_COSTS.branding_analyze, remainingSpendable: consumed.remainingSpendable };
   }
@@ -72,8 +74,8 @@ export class BrandingService {
       jobId,
       uid,
       jobType: "branding_improve",
-      provider: "gemini",
-      model: this.config.GEMINI_IMAGE_MODEL,
+      provider: this.ai.jobProviderLabel(),
+      model: this.ai.portraitModelId(),
       status: "queued",
       credits: CREDIT_COSTS.branding_improve,
       payload: { uploadId, enhancementPrompt: prompt },
@@ -112,12 +114,18 @@ export class BrandingService {
       const prompt = String(job.payload.enhancementPrompt ?? "");
       const upload = await this.loadUpload(job.uid, uploadId);
       const bytes = await this.storage.readBytes(upload.path);
-      const imageB64 = await this.gemini.generateImage(prompt, bytes.toString("base64"), upload.mimeType);
+      const { imageBase64: imageB64, meta: portraitMeta } = await this.ai.generatePortrait(
+        prompt,
+        bytes.toString("base64"),
+        upload.mimeType,
+      );
+      job.provider = portraitMeta.provider;
+      job.model = portraitMeta.model;
       const out = await this.storage.saveGenerated(job.uid, `branding_${job.jobId}`, Buffer.from(imageB64, "base64"));
       const imageUrl = this.storage.url(out, this.config);
       let vision: Record<string, unknown> = {};
       try {
-        vision = (await this.gemini.visionJson(ANALYZE_PROMPT, [{ mimeType: "image/png", data: imageB64 }])) as Record<string, unknown>;
+        vision = (await this.ai.visionJson(ANALYZE_PROMPT, [{ mimeType: "image/png", data: imageB64 }])).data as Record<string, unknown>;
       } catch {
         vision = (await this.latestAnalyzeResult(job.uid, uploadId)) ?? {};
       }
@@ -131,7 +139,7 @@ export class BrandingService {
       job.status = "completed";
       job.fromPassCredits = consumed.fromPassCredits;
       job.fromBonusCredits = consumed.fromBonusCredits;
-      job.result = scored;
+      job.result = { ...scored, ...aiTrace(portraitMeta) };
       await job.save();
     } catch (err) {
       const latest = await AiJobModel.findOne({ jobId: payload.jobId });
@@ -157,9 +165,7 @@ export class BrandingService {
   private async scoreUpload(uid: string, uploadId: string) {
     const upload = await this.loadUpload(uid, uploadId);
     const bytes = await this.storage.readBytes(upload.path);
-    return (await this.gemini.visionJson(ANALYZE_PROMPT, [
-      { mimeType: upload.mimeType, data: bytes.toString("base64") },
-    ])) as Record<string, unknown>;
+    return this.ai.visionJson(ANALYZE_PROMPT, [{ mimeType: upload.mimeType, data: bytes.toString("base64") }]);
   }
 
   private async latestAnalyzeResult(uid: string, uploadId: string): Promise<Record<string, unknown> | null> {

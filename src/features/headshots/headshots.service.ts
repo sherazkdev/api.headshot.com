@@ -1,7 +1,9 @@
 import type { AppConfig } from "../../config/index.js";
 import { CREDIT_COSTS } from "../../config/credits.js";
+import { AIProvider } from "../../lib/ai/index.js";
+import { resolveHeadshotJobAi } from "./headshot-provider.js";
+import { aiTrace } from "../../lib/ai/job-meta.js";
 import { errors } from "../../lib/errors.js";
-import { GeminiClient, BflClient } from "../../lib/ai-providers.js";
 import { LocalStorage } from "../../lib/storage.js";
 import { stripGpsExif } from "../../lib/exif.js";
 import { promptFromSelections } from "../../lib/prompt-catalog.js";
@@ -17,8 +19,7 @@ export class HeadshotsService {
     private readonly credits: CreditsService,
     private readonly queue: MemoryQueue,
     private readonly storage: LocalStorage,
-    private readonly gemini: GeminiClient,
-    private readonly bfl: BflClient,
+    private readonly ai: AIProvider,
   ) {
     this.queue.register("headshot.generate", (job) => this.process(job.payload as { jobId: string }));
   }
@@ -68,8 +69,8 @@ export class HeadshotsService {
     await rejectIfDuplicate(uid, "headshots.generate", input.idempotencyKey, this.config.IDEMPOTENCY_TTL_HOURS);
 
     const jobId = crypto.randomUUID();
-    const provider = input.provider ?? this.config.HEADSHOT_AI_PROVIDER;
-    const model = provider === "bfl" ? this.config.BFL_FLUX_MODEL : this.config.GEMINI_IMAGE_MODEL;
+    const requestProvider = input.provider ?? this.config.HEADSHOT_AI_PROVIDER;
+    const { provider, model } = resolveHeadshotJobAi(this.ai);
     await AiJobModel.create({
       jobId,
       uid,
@@ -83,6 +84,7 @@ export class HeadshotsService {
         toolType: input.toolType ?? "headshot",
         selections: input.selections ?? {},
         referencePrompts: input.referencePrompts ?? [],
+        requestProvider,
       },
     });
     this.queue.enqueue("headshot.generate", { jobId });
@@ -151,10 +153,12 @@ export class HeadshotsService {
         visualReferencePrompt?: string;
       }>;
       const prompt = promptFromSelections(selections, referencePrompts);
-      let imageB64: string;
-      if (job.provider === "bfl") imageB64 = await this.bfl.generate(prompt, b64);
-      else imageB64 = await this.gemini.generateImage(prompt, b64, upload.mimeType);
-      const out = await this.storage.saveGenerated(job.uid, job.jobId, Buffer.from(imageB64, "base64"));
+      const portrait = await this.ai.generatePortrait(prompt, b64, upload.mimeType);
+      const imageB64 = portrait.imageBase64;
+      const aiMeta = portrait.meta;
+      job.provider = portrait.meta.provider;
+      job.model = portrait.meta.model;
+      const stored = await this.storage.saveGenerated(job.uid, job.jobId, Buffer.from(imageB64, "base64"));
       const consumed = await this.credits.consume(
         job.uid,
         CREDIT_COSTS.headshot_generation,
@@ -167,8 +171,9 @@ export class HeadshotsService {
       job.fromPassCredits = consumed.fromPassCredits;
       job.fromBonusCredits = consumed.fromBonusCredits;
       job.result = {
-        imageUrl: this.storage.url(out, this.config),
+        imageUrl: this.storage.url(stored, this.config),
         remainingSpendable: consumed.remainingSpendable,
+        ...aiTrace(aiMeta),
       };
       job.durationMs = Date.now() - started;
       await job.save();

@@ -1,7 +1,8 @@
 import { CREDIT_COSTS } from "../../config/credits.js";
 import { errors } from "../../lib/errors.js";
 import { asDate } from "../../lib/wallet.js";
-import { GeminiClient } from "../../lib/ai-providers.js";
+import { AIProvider } from "../../lib/ai/index.js";
+import { aiTrace } from "../../lib/ai/job-meta.js";
 import { LocalStorage } from "../../lib/storage.js";
 import { rejectIfDuplicate } from "../../lib/idempotency.js";
 import { UploadModel, AiJobModel } from "../../models/index.js";
@@ -75,7 +76,7 @@ export class ProfileReviewService {
   constructor(
     private readonly config: AppConfig,
     private readonly credits: CreditsService,
-    private readonly gemini: GeminiClient,
+    private readonly ai: AIProvider,
     private readonly storage: LocalStorage,
   ) {}
 
@@ -102,7 +103,7 @@ export class ProfileReviewService {
         data: (await this.storage.readBytes(u.path)).toString("base64"),
       })),
     );
-    const vision = await this.gemini.visionJson(analyzePrompt(images.length), images);
+    const { data: vision, meta: visionMeta } = await this.ai.visionJson(analyzePrompt(images.length), images);
     const consumed = await this.credits.consume(
       uid,
       CREDIT_COSTS.profile_review,
@@ -117,14 +118,14 @@ export class ProfileReviewService {
       jobId,
       uid,
       jobType: "profile_review",
-      provider: "gemini",
-      model: this.config.GEMINI_VISION_MODEL,
+      provider: visionMeta.provider,
+      model: visionMeta.model,
       status: "completed",
       credits: CREDIT_COSTS.profile_review,
       fromPassCredits: consumed.fromPassCredits,
       fromBonusCredits: consumed.fromBonusCredits,
       payload: { uploadIds },
-      result: normalized,
+      result: { ...normalized, ...aiTrace(visionMeta) },
     });
     return {
       reviewId: jobId,

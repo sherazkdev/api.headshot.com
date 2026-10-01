@@ -52,6 +52,15 @@ const envSchema = z.object({
   GEMINI_VISION_MODEL: z.string().default("gemini-3.1-flash-lite"),
   BFL_API_KEY: z.string().optional().default(""),
   BFL_FLUX_MODEL: z.string().default("flux-2-klein-4b"),
+  BYTEPLUS_API_KEY: z.string().optional().default(""),
+  BYTEPLUS_BASE_URL: z.string().default("https://ark.ap-southeast.bytepluses.com/api/v3"),
+  /** Primary Seedream image model (alias: BYTEPLUS_SEEDREAM_MODEL). */
+  BYTEPLUS_MODEL: z.string().optional().default(""),
+  /** Multimodal model on ModelArk; must be activated for your account (see GET /models). */
+  BYTEPLUS_VISION_MODEL: z.string().default("seed-2-0-lite-260428"),
+  /** @deprecated use BYTEPLUS_MODEL */
+  BYTEPLUS_SEEDREAM_MODEL: z.string().optional().default(""),
+  /** Legacy request default; `bfl` no longer routes headshots to Flux. */
   HEADSHOT_AI_PROVIDER: z.enum(["gemini", "bfl"]).default("gemini"),
   GOOGLE_PLAY_PACKAGE_NAME: z.string().default("com.yourcompany.headshotai"),
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional().default(""),
@@ -84,10 +93,15 @@ const envSchema = z.object({
 
 export type AppConfig = z.infer<typeof envSchema> & {
   isProd: boolean;
+  BYTEPLUS_MODEL: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   loadDotEnv();
   const parsed = envSchema.parse(env);
-  return { ...parsed, isProd: parsed.NODE_ENV === "production" };
+  const BYTEPLUS_MODEL =
+    parsed.BYTEPLUS_MODEL ||
+    parsed.BYTEPLUS_SEEDREAM_MODEL ||
+    "dola-seedream-5-0-flash-260915";
+  return { ...parsed, BYTEPLUS_MODEL, isProd: parsed.NODE_ENV === "production" };
 }

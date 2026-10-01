@@ -14,7 +14,7 @@ import { AppError, errorEnvelope, rewriteFastifyErrorPayload, toClientError } fr
 import { MemoryCache } from "./cache/index.js";
 import { MemoryQueue } from "./queue/index.js";
 import { FirebaseAuth } from "./lib/firebase-auth.js";
-import { GeminiClient, BflClient } from "./lib/ai-providers.js";
+import { AIProvider } from "./lib/ai/index.js";
 import { LocalStorage } from "./lib/storage.js";
 import { AuthValidator } from "./plugins/auth-validator.js";
 import { AdminAuthService, AuthController, registerAuthRoutes } from "./features/auth/index.js";
@@ -107,16 +107,18 @@ export async function buildApp(config: AppConfig): Promise<FastifyInstance> {
   const queue = new MemoryQueue(config.MAX_INFLIGHT_AI);
   const firebase = new FirebaseAuth(config, cache);
   const auth = new AuthValidator(firebase, cache, { allowDevUserJwt: !config.isProd });
-  const gemini = new GeminiClient(config);
-  const bfl = new BflClient(config);
+  const ai = new AIProvider(config, {
+    info: (obj, msg) => app.log.info(obj, msg),
+    warn: (obj, msg) => app.log.warn(obj, msg),
+  });
   const storage = new LocalStorage();
 
   const credits = new CreditsService(cache, config);
   const users = new UsersService(cache, storage);
   const apiKeys = new ApiKeysService(cache);
-  const headshots = new HeadshotsService(config, credits, queue, storage, gemini, bfl);
-  const branding = new BrandingService(config, credits, queue, gemini, storage);
-  const reviews = new ProfileReviewService(config, credits, gemini, storage);
+  const headshots = new HeadshotsService(config, credits, queue, storage, ai);
+  const branding = new BrandingService(config, credits, queue, ai, storage);
+  const reviews = new ProfileReviewService(config, credits, ai, storage);
   const subs = new SubscriptionsService(config);
   const projects = new ProjectsService();
   const notifications = new NotificationsService();

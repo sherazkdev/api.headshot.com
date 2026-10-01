@@ -26,6 +26,9 @@
     "index": "tsx src/scripts/index-db.ts",
     "seed:demo": "tsx src/scripts/seed-demo.ts",
     "test": "tsx src/scripts/verify-api.ts",
+    "test:headshot-ai": "tsx src/scripts/test-headshot-provider-selection.ts",
+    "test:portrait-ai": "tsx src/scripts/test-portrait-ai.ts",
+    "test:env-example": "tsx src/scripts/test-from-env-example.ts",
     "verify": "tsx src/scripts/verify-api.ts",
     "docs:pdf": "tsx src/scripts/generate-api-reference-pdf.ts"
   },

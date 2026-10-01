@@ -11,7 +11,7 @@ export type AiJobDoc = {
   jobId: string;
   uid: string;
   jobType: (typeof JOB_TYPES)[number];
-  provider: "gemini" | "bfl";
+  provider: "gemini" | "bfl" | "byteplus";
   model: string;
   status: (typeof JOB_STATUSES)[number];
   payload: Record<string, unknown>;

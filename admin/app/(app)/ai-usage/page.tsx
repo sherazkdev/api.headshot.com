@@ -36,9 +36,14 @@ export default function AiUsagePage() {
       .catch(() => setLoaded(true));
   }, []);
 
-  const providerColors: Record<string, string> = { gemini: "#3b82f6", bfl: "#8b5cf6", flux: "#8b5cf6" };
+  const providerColors: Record<string, string> = {
+    gemini: "#3b82f6",
+    bfl: "#8b5cf6",
+    flux: "#8b5cf6",
+    byteplus: "#f97316",
+  };
   const donut = byProvider.map((p) => ({
-    name: p._id === "bfl" ? "Flux" : p._id,
+    name: p._id === "bfl" ? "Flux" : p._id === "byteplus" ? "Seedream" : p._id,
     value: p.n,
     color: providerColors[p._id] ?? "#22c55e",
   }));
